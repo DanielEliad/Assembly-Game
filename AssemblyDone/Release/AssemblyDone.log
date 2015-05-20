@@ -1,0 +1,35 @@
+﻿Build started 5/19/2015 2:10:03 PM.
+     1>Project "C:\Users\user\Desktop\AssemblyDone\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Build target(s)).
+     1>_MASM:
+         Assembling frame_draw.asm...
+         cmd.exe /C "C:\Users\user\AppData\Local\Temp\tmpa4f313ece191467e82f748cbbc8fb802.cmd"
+         ml.exe /c /nologo /Zi /Fo"Release\frame_draw.obj" /W3 /errorReport:prompt  /Taframe_draw.asm
+     1>frame_draw.asm(2369): warning A6001: no return from procedure
+     1>frame_draw.asm(308): error A2101: cannot add two relocatable labels
+     1>frame_draw.asm(309): error A2101: cannot add two relocatable labels
+     1>frame_draw.asm(310): error A2101: cannot add two relocatable labels
+     1>frame_draw.asm(338): warning A6004: procedure argument or local not referenced : returnvaluex
+     1>frame_draw.asm(338): warning A6004: procedure argument or local not referenced : returnvaluey
+     1>frame_draw.asm(392): warning A6004: procedure argument or local not referenced : hold
+     1>frame_draw.asm(392): warning A6004: procedure argument or local not referenced : hold2
+     1>frame_draw.asm(456): warning A6004: procedure argument or local not referenced : hdc
+     1>frame_draw.asm(456): warning A6004: procedure argument or local not referenced : Highlighted
+     1>frame_draw.asm(595): warning A6004: procedure argument or local not referenced : radix
+     1>frame_draw.asm(973): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(973): warning A6004: procedure argument or local not referenced : hdcMem1
+     1>frame_draw.asm(973): warning A6004: procedure argument or local not referenced : hOld
+     1>frame_draw.asm(1060): warning A6004: procedure argument or local not referenced : hdcMem
+     1>frame_draw.asm(1136): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(1327): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : brushcolouring2
+     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : hdcMem
+     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : hbmOld
+     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : bm
+     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : rectforpic
+     1>frame_draw.asm(2369): warning A6004: procedure argument or local not referenced : animcls
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\BuildCustomizations\masm.targets(50,5): error MSB3721: The command "ml.exe /c /nologo /Zi /Fo"Release\frame_draw.obj" /W3 /errorReport:prompt  /Taframe_draw.asm" exited with code 1.
+     1>Done Building Project "C:\Users\user\Desktop\AssemblyDone\AssemblyDone\AssemblyDone.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:19.28
