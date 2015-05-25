@@ -25,7 +25,14 @@ includelib \masm32\lib\winmm.lib
       includelib \masm32\lib\oleaut32.lib
       includelib \masm32\lib\ole32.lib
       includelib \masm32\lib\msvcrt.lib
+	  include \masm32\include\msvcrt.inc
+
+	  include \masm32\include\Ws2_32.inc
+includelib \masm32\lib\Ws2_32.lib
  
+ include \masm32\include\ntoskrnl.inc
+ includelib \masm32\lib\ntoskrnl.lib
+
  COMMENT @
  To Do List:
 
@@ -39,6 +46,7 @@ includelib \masm32\lib\winmm.lib
 
  @
 .const
+WM_SOCKET equ WM_USER+100
 JMP_HEIGHT equ 50
 JMP_SPEED equ 8
 VEL_X equ 6
@@ -72,6 +80,8 @@ Space_Between_Player_Width	equ 64
 Space_Between_Player_Height	equ	52
 LengthofLeaf equ 12
 .data
+expectingip	db 'I am now expecting IP',0
+
 PlayerInformation	STRUCT
 x	DWORD	  200	
 y	DWORD     400
@@ -81,10 +91,11 @@ TimeStepShouldDisappear	DWORD	?
 Time_Between_Steps_P	DWORD	75;In MilliSeconds
 CURRENTACTION	HBITMAP	?
 CURRENTACTIONMASK	HBITMAP	?
-
 speed	DWORD	6
 PlayerInformation ENDS
+
 Player	PlayerInformation<>
+Player2	PlayerInformation<400,400,?,?,?,?,?,?,?>
  deadmsg BYTE "You Have Been Eaten By My Lovely Zombies",0dh,0ah,0dh,0dh,0dh,"You Tried	 .	 .	 .",0dh,0ah,0dh,"That's Something	.	.	.",0
  deadcaption BYTE "Game Over",0
  Found	DWORD	0
@@ -113,6 +124,7 @@ dstY DWORD ?
 dstY2 DWORD ?
 path db "IDB_myimg",0
 bullets DWORD 1000 dup(-999)
+enemybullets	DWORD 1000 dup(-999)
 zombies DWORD 2000 dup(-999)
 coins DWORD	1000	dup(-999)
 Packs	DWORD	1000	dup(-999)
@@ -157,7 +169,7 @@ buffer2 DWORD 3 dup(0)
  FramesSinceLastClick	DWORD	0
  SoundPath	BYTE	"shootsound.wav",0
  ;SoundPathBite	BYTE	"bite.wav",0
- volume	DWORD	0aff0affh
+ volume	DWORD	003f003fh
  ;volumebite	DWORD 5fff5fffh
  Time_Between_Steps	DWORD	500;In Milliseconds
  Store	DWORD	0
@@ -202,15 +214,158 @@ buffer2 DWORD 3 dup(0)
  priority dd	?
  leaf ENDS
 
-queueArr DWORD (WINDOW_WIDTH*WINDOW_HEIGHT) dup(0)
+queueArr DWORD (WINDOW_WIDTH*WINDOW_HEIGHT/80) dup(0)
 
- .code
+
+sin sockaddr_in <>
+clientsin sockaddr_in <>
+IPAddress db "212.179.222.94",0 
+Port dd 30001                    
+text db "placeholder",0
+textoffset DWORD ?
+pleaseconnectus db "please connect us!!!",0
+doyouwanttoconnect db "Yes do you want to connect with your friend?",0
+yesiamsure db "yes i am sure",0
+get_ready_for_ip db "Get ready for IP.",0
+expecting_IP db FALSE
+expecting_PORT db FALSE
+wsadata WSADATA <>
+clientip db 20 dup(0)
+clientport dd 0
+
+infobuffer db 1024 dup(0)
+hMemory db 100 dup(0)                ; handle to memory block 
+buffer_for_sock db 1024 dup(0)                       ; address of the memory block 
+available_data db 1024 dup(0)        ; the amount of data available from the socket 
+actual_data_read db 1024 dup(0)    ; the actual amount of data read from the socket 
+connected_to_peer db FALSE
+sock DWORD ?
+captionyesiwanttoconnect	db 'yes i am sure',0
+host	db	FALSE
+you_are_host db 'You are the host!!!',0
+you_are_not_host db 'You are not the host!!!',0
+iamhost db 'I am the host',0
+iamnothost db 'I am NOT the host',0
+recievingzombies db 'I am RECIEVING zombies',0
+sendingzombies db 'I am SENDING zombies',0
+recievingbullets db 'I am RECIEVING bullets',0
+recievingxy db 'I am RECIEVING xy',0
+connectedtopeer db 'I am now CONNECTED TO PEER',0
+irecievedsomething db 'I recieved SOMETHING',0
+.code
+ sendlocation PROC, paramter:DWORD
+	local send_what:BYTE
+	mov send_what,0
+	again:
+	mov ebx, offset infobuffer
+	cmp send_what,0
+	jne nosendplayer
+
+
+	mov byte ptr [ebx],0
+	inc ebx
+
+	
+	mov eax, Player.x
+	mov [ebx], eax
+	add ebx, 4
+
+	mov eax, Player.y
+	mov [ebx], eax
+	add ebx, 4
+
+	mov eax,Player.CURRENTFACING
+	mov [ebx], eax
+	add ebx, 4
+	
+	mov eax,Player.CURRENTSTEP
+	mov [ebx], eax
+	add ebx, 4
+	
+	mov eax,Player.CURRENTACTION
+	mov [ebx], eax
+	add ebx, 4
+
+	mov eax,Player.CURRENTACTIONMASK
+	mov [ebx], eax
+
+	inc send_what
+	cmp send_what,1
+	jng no_need_to_reset1
+	mov send_what,0
+	no_need_to_reset1:
+	invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
+	jmp endofsendlocation
+	nosendplayer:
+
+	cmp send_what,1
+	jne nosendbullets
+
+	mov byte ptr [ebx],1
+	inc ebx
+	push ebx
+	invoke RtlMoveMemory ,ebx,offset bullets,50*16
+	invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
+	
+	inc send_what
+	cmp send_what,1
+	jng no_need_to_reset2
+	mov send_what,0
+	no_need_to_reset2:
+		jmp endofsendlocation
+
+	nosendbullets:
+
+	;cmp host,FALSE
+	;je nosendzombies
+	;cmp send_what,2
+	;jne nosendzombies
+
+	;mov byte ptr [ebx],2
+	;inc ebx
+	;invoke RtlMoveMemory ,ebx,offset zombies,25*36
+	;invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
+	
+	;inc send_what
+	;cmp send_what,3
+	;jng no_need_to_reset3
+	;mov send_what,0
+	;no_need_to_reset3:
+	;jmp endofsendlocation
+	;nosendzombies:
+
+	;cmp send_what,3
+	;jne nosendzombies2
+	;mov byte ptr [ebx],3
+	;inc ebx
+	;mov esi,offset zombies
+	;add esi,25*36
+	;invoke RtlMoveMemory,ebx,esi,25*36
+	;invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
+	;inc send_what
+	;cmp send_what,3
+	;jng no_need_to_reset4
+	;mov send_what,0
+	;no_need_to_reset4:
+	;jmp endofsendlocation
+	;nosendzombies2:
+	
+
+	endofsendlocation:
+	invoke Sleep,3
+	jmp again
+
+	ret
+sendlocation ENDP
+
 getParent PROC,index:DWORD
 ;--------------------------------------------------------------------------------
 mov eax,index
 mov ebx,LengthofLeaf
+xor edx,edx
 idiv ebx
 mov ebx,2
+xor edx,edx
 idiv ebx
 mov ebx,LengthofLeaf
 imul ebx
@@ -219,121 +374,168 @@ ret
 getParent ENDP
 
 getLeftChild	PROC,index:DWORD
-
+;--------------------------------------------------------------------------------
 mov eax,index
 mov ebx,2
 imul ebx
-
+;================================================================================
 ret
 getLeftChild ENDP
 
 getRightChild	PROC,index:DWORD
-
+;--------------------------------------------------------------------------------
 mov eax,index
 mov ebx,2
 imul ebx
 add eax,LengthofLeaf
-
+;================================================================================
 ret
 getRightChild	ENDP
 
 switch_leafs PROC,to:DWORD,from:DWORD
-
+;--------------------------------------------------------------------------------
 local temp:DWORD
+local tempto:DWORD
+local tempfrom:DWORD
+mov ebx,offset queueArr
+add ebx,to
 
-mov eax,queueArr[to]
+mov esi,offset queueArr
+add esi,from
+
+
+mov eax,[ebx]
 mov temp,eax
-mov eax,queueArr[from]
-mov queueArr[to],eax
+mov eax,[esi]
+mov [ebx],eax
 mov eax,temp
-mov queueArr[from],eax
+mov [esi],eax
 
-mov eax,queueArr[to+4]
+mov eax,[ebx+4]
 mov temp,eax
-mov eax,queueArr[from+4]
-mov queueArr[to+4],eax
+mov eax,[esi+4]
+mov [ebx+4],eax
 mov eax,temp
-mov queueArr[from+4],eax
+mov [esi+4],eax
 
-mov eax,queueArr[to+8]
+mov eax,[ebx+8]
 mov temp,eax
-mov eax,queueArr[from+8]
-mov queueArr[to+8],eax
+mov eax,[esi+8]
+mov [ebx+8],eax
 mov eax,temp
-mov queueArr[from+8],eax
+mov [esi+8],eax
 
-
+;================================================================================
 ret
 switch_leafs ENDP
 
 insertPriority PROC,x:DWORD,y:DWORD,priority:DWORD
-
+;--------------------------------------------------------------------------------
 mov ebx,offsetToEndofArray
 mov eax,x
-mov queueArr[ebx],eax
+mov [queueArr+ebx],eax
 mov eax,y
-mov queueArr[ebx+4],eax
+mov [queueArr+ebx+4],eax
 mov eax,priority
-mov queueArr[ebx+8],eax
-checkagainifparentbigger:
+mov [queueArr+ebx+8],eax
+
+checkagainifparentsmaller: 
 cmp ebx,LengthofLeaf
-je  noswitch
+jle  noswitch
 push ebx
 invoke getParent,ebx
 pop ebx
-mov ecx,queueArr[eax]
-cmp ecx,queueArr[ebx]
+mov ecx,[queueArr+eax+8]
+mov esi,priority
+cmp ecx,esi;if parent_priority<=priority_inserted ==> noswitch:
 jle noswitch
 
 push eax
 invoke switch_leafs,eax,ebx
 pop eax
 mov ebx,eax
-jmp checkagainifparentbigger
+jmp checkagainifparentsmaller
 noswitch:
-
+add offsetToEndofArray,LengthofLeaf
+;================================================================================
 ret
 insertPriority	ENDP
 
 removeMax	PROC,lppt:DWORD
-local returnvaluex:DWORD
-local returnvaluey:DWORD
+;--------------------------------------------------------------------------------
 
-mov eax,queueArr[LengthofLeaf]
-mov [lppt],eax
-mov eax,queueArr[LengthofLeaf+4]
-mov [lppt+4],eax
+cmp offsetToEndofArray,LengthofLeaf
+je endofremoveMax
+mov esi,LengthofLeaf
+mov eax,[queueArr+esi]
+mov ebx,lppt
+mov dword ptr [ebx],eax
+mov eax,[queueArr+esi+4]
+mov dword ptr [ebx+4],eax
 
-invoke switch_leafs,LengthofLeaf,offsetToEndofArray
-mov queueArr[offsetToEndofArray],0
-mov queueArr[offsetToEndofArray+4],0
-mov queueArr[offsetToEndofArray+8],0
+pusha
+mov esi,offsetToEndofArray
+sub esi, LengthofLeaf
+invoke switch_leafs,LengthofLeaf,esi
+popa
+mov esi,offsetToEndofArray
+sub esi,LengthofLeaf
+mov queueArr[esi],0
+mov queueArr[esi+4],0
+mov queueArr[esi+8],0
 sub offsetToEndofArray,LengthofLeaf
 
 mov esi,LengthofLeaf
 
 checkagain:
 invoke getLeftChild,esi
+cmp eax,offsetToEndofArray
+jge endofremoveMax
 mov edi,eax
+mov ebx,offset queueArr
+add ebx,edi
+mov ebx,[ebx+8]
+push ebx
+push edi
 invoke getRightChild,esi
-cmp edi,eax
-jg leftisbigger
+cmp eax,offsetToEndofArray
+jge leftissmaller;jge endofremoveMax
+pop edi
+pop ebx
+mov ecx,[queueArr+eax+8]
+cmp ebx,ecx
+jl leftissmaller
 
-rightisbigger:
+rightissmaller:
+pusha
+mov esi,dword ptr [queueArr+esi+8]
+cmp esi,[queueArr+eax+8]
+jle endofremoveMax_withpopa;maybe jl
+popa
 push eax
 invoke switch_leafs,esi,eax
 pop eax
 mov esi,eax
 cmp esi,offsetToEndofArray
-je endofremoveMax
+jge endofremoveMax
 jmp checkagain
-leftisbigger:
+
+leftissmaller:
+pusha
+mov esi,dword ptr [queueArr+esi+8]
+cmp esi,[queueArr+edi+8]
+jle endofremoveMax_withpopa;maybe jl
+popa
+pusha
 invoke switch_leafs,esi,edi
+popa
 mov esi,edi
 cmp esi,offsetToEndofArray
-jne checkagain
+jl checkagain
+endofremoveMax_withpopa:
+popa
 endofremoveMax:
-
+;================================================================================
 ret
 removeMax ENDP
 
@@ -1059,6 +1261,60 @@ jnz loopingdrawingpacks
 ret
 Draw_Packs	ENDP
 
+AdvanceZombie_and_CheckIfDead	PROC,hWnd:HWND
+;--------------------------------------------------------------------------------
+mov ebx,offset zombies
+mov ecx,50
+
+loopingzomb:
+pusha;-----------------------------------------------
+mov eax,dword ptr [ebx]
+cmp eax,-999
+je next
+mov eax,dword ptr [ebx+16];hit count
+cmp eax,3
+jge deadz
+movss xmm0, dword ptr [ebx]
+movss xmm1, dword ptr [ebx+4]
+addss xmm0,dword ptr [ebx+12]
+movss dword ptr [ebx],xmm0
+addss xmm1, dword ptr [ebx+8]
+movss dword ptr [ebx+4],xmm1
+jmp next
+deadz:
+add scoreNum,50
+sub Time_Between_Steps,50
+pusha;--------------------------------
+cvtss2si eax,dword ptr [ebx]
+mov ZombieX,eax
+cvtss2si edx,dword ptr [ebx+4]
+mov ZombieY,edx
+invoke Maybe_Drop_Pack,ZombieX,ZombieY
+invoke DropCoin,ZombieX,ZombieY
+
+popa;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mov dword ptr [ebx],-999
+cmp Zombie_Spawning_Time,500
+jle next
+mov eax,Zombie_Spawning_Time
+sub eax,60
+mov Zombie_Spawning_Time,eax
+;inc Number_To_Spawn
+invoke SetTimer, hWnd, ZombieTime, Zombie_Spawning_Time , NULL ;Set the zombie time
+movss xmm0,ADDINGZ
+movss xmm1,VELZ
+addss xmm1,xmm0
+movss VELZ,xmm1
+
+next:
+popa;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+add ebx,36
+dec ecx
+jnz loopingzomb;loop loopingzomb
+;================================================================================
+ret
+AdvanceZombie_and_CheckIfDead ENDP
+
 DrawZombie PROC,hdc:HDC,brush:HBRUSH,hWnd:HWND
 ;--------------------------------------------------------------------------------
 mov ebx,offset zombies
@@ -1112,7 +1368,6 @@ cvtss2si edx,dword ptr [ebx+4]
 mov ZombieY,edx
 invoke Maybe_Drop_Pack,ZombieX,ZombieY
 invoke DropCoin,ZombieX,ZombieY
-
 popa
 mov dword ptr [ebx],-999
 cmp Zombie_Spawning_Time,500
@@ -1271,10 +1526,10 @@ DrawZombie ENDP
  ret
  adjustzombie	ENDP
 
-bullet PROC,hdc:HDC,brush:HBRUSH
+bullet PROC,hdc:HDC,brush:HBRUSH,lp_bullets_array:DWORD
 ;--------------------------------------------------------------------------------
 local rc:RECT
-mov ebx,offset bullets
+mov ebx,lp_bullets_array
 mov ecx,50
  
 loopingbull:
@@ -1488,7 +1743,7 @@ Draw_Sprint_Bar ENDP
            movss dword ptr [ebx+4],xmm1
 
 	;invoke waveOutSetVolume, NULL , volume;	Special Thanks To Tal Bortman
-    invoke PlaySound, offset SoundPath, NULL,SND_ASYNC;	Special Thanks To Tal Bortman
+    ;invoke PlaySound, offset SoundPath, NULL,SND_ASYNC;	Special Thanks To Tal Bortman
 ;================================================================================
  ret
  createbullet ENDP
@@ -1605,6 +1860,8 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
         je      timing
 		cmp message,WM_ERASEBKGND
 		je returnnonzero
+		cmp message, WM_SOCKET
+		je handlesocket
         cmp message,	WM_CREATE
 		je create     
         jmp OtherInstances
@@ -1612,6 +1869,202 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 	   returnnonzero:
 	   mov eax,1
 	   ret
+
+	   handlesocket:
+	   mov eax,lParam 
+        .if ax==FD_CONNECT            ; the low word of lParam contains the event code. 
+            shr eax,16                              ; the error code (if any) is in the high word of lParam 
+            .if ax==NULL 
+                ;<no error occurs so proceed> 
+            .else 
+					invoke ExitProcess, 1
+            .endif 
+        .elseif    ax==FD_READ 
+            shr eax,16 
+            .if ax==NULL 
+				 invoke ioctlsocket, sock, FIONREAD, addr available_data 
+				 .if eax==NULL 				    
+					invoke recvfrom, sock, offset buffer_for_sock, 1024, 0,NULL,NULL
+					;invoke MessageBox, hWnd,offset irecievedsomething,offset irecievedsomething,MB_OK
+					.if connected_to_peer == TRUE
+						
+						mov ebx, offset buffer_for_sock
+						cmp byte ptr [ebx],0
+						jne norecieveplayer
+						;invoke MessageBox, hWnd,offset irecievedsomething,offset irecievedsomething,MB_OK
+						inc ebx
+						mov eax, [ebx]
+						mov Player2.x, eax
+
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.y, eax
+
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.CURRENTFACING, eax
+						
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.CURRENTSTEP, eax
+						
+						add ebx, 4
+						mov eax, [ebx]
+						mov Player2.CURRENTACTION, eax
+						
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.CURRENTACTIONMASK, eax
+						jmp endofrecieve
+						
+						norecieveplayer:
+						
+						
+						cmp byte ptr [ebx],1
+						jne norecievebullets
+						
+						inc ebx
+						invoke RtlMoveMemory ,offset enemybullets,ebx,50*16
+
+						jmp endofrecieve
+
+						norecievebullets:
+
+						;cmp host,TRUE
+						;je norecievezombies
+						;cmp byte ptr [ebx],2
+						;jne norecievezombies
+						;invoke MessageBox, hWnd,offset irecievedsomething,offset irecievedsomething,MB_OK
+						;inc ebx
+						;invoke RtlMoveMemory,offset zombies,ebx,25*36
+						;jmp endofrecieve
+						;norecievezombies:
+
+
+						;cmp host,TRUE
+						;je norecievezombies2
+						;cmp byte ptr [ebx],3
+						;jne norecievezombies2
+						;invoke MessageBox, hWnd,offset recievingxy,offset recievingxy,MB_OK
+						;inc ebx
+						;mov esi,offset zombies
+						;add esi,25*36
+						;invoke RtlMoveMemory,esi,ebx,25*36
+						;jmp endofrecieve
+						;norecievezombies2:
+
+						endofrecieve:
+						ret
+					.endif
+					
+
+					invoke crt_strcmp, offset buffer_for_sock, offset doyouwanttoconnect
+					cmp eax, 0
+					je sendyes
+
+					invoke crt_strcmp, offset buffer_for_sock, offset get_ready_for_ip
+					cmp eax, 0
+					je getreadyforip
+
+					
+					;invoke crt_strcmp,offset buffer_for_sock,offset you_are_not_host
+					;cmp eax,0
+					;je you_are_not_the_host
+
+
+					.if expecting_PORT == TRUE
+				     invoke crt_atoi, offset buffer_for_sock
+					 mov clientport, eax
+					 mov expecting_PORT, FALSE
+
+					 
+					 mov clientsin.sin_family, AF_INET 
+					 invoke htons, clientport                    ; convert port number into network byte order first 
+					 mov clientsin.sin_port,ax                  ; note that this member is a word-size param. 
+			     	 invoke inet_addr, addr clientip    ; convert the IP address into network byte order 
+			 		 mov clientsin.sin_addr,eax 
+
+
+					 invoke CreateThread, NULL, NULL, offset sendlocation,offset clientsin, NULL, NULL
+					 mov connected_to_peer, TRUE
+					 ;invoke MessageBox, hWnd,offset connectedtopeer,offset connectedtopeer,MB_OK
+					.endif
+
+
+					.if expecting_IP == TRUE
+						;invoke crt_strcmp,offset buffer_for_sock,offset you_are_host
+					;cmp eax,0
+					;je you_are_the_host
+					
+						 invoke crt_strcpy, offset clientip, offset buffer_for_sock
+						 mov textoffset, offset clientip
+						 mov expecting_PORT, TRUE
+						 mov expecting_IP, FALSE
+					.endif					
+						mov ebx, offset buffer_for_sock
+						mov eax, [ebx]
+						mov Player2.x, eax
+			
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.y, eax
+
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.CURRENTFACING, eax
+						
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.CURRENTSTEP, eax
+						
+						add ebx, 4
+						mov eax, [ebx]
+						mov Player2.CURRENTACTION, eax
+						
+						add ebx, 4
+						mov eax, [ebx]		
+						mov Player2.CURRENTACTIONMASK, eax
+	
+				.endif
+                ;<no error occurs so proceed> 
+            .else 
+				invoke ExitProcess, 1
+            .endif 
+        .elseif   ax==FD_CLOSE 
+            shr eax,16 
+            .if ax==NULL 
+                ;<no error occurs so proceed> 
+            .else 
+				invoke ExitProcess, 1
+            .endif 
+        .endif 
+		ret
+
+
+		getreadyforip:
+		mov expecting_IP, TRUE
+		;invoke MessageBox, 0,offset expectingip,offset expectingip,MB_OK
+ 
+		ret
+
+
+		sendyes:
+		invoke crt_strlen, offset yesiamsure
+		invoke sendto,sock, offset yesiamsure, eax, 0, offset sin, sizeof sin
+		mov expecting_IP, TRUE
+		;invoke MessageBox, hWnd,offset captionyesiwanttoconnect,offset captionyesiwanttoconnect,MB_OK
+		ret
+		
+		you_are_the_host:
+		mov host,TRUE
+		;invoke MessageBox, hWnd,offset iamhost,offset iamhost,MB_OK
+		ret
+
+
+		you_are_not_the_host:
+		mov host,FALSE
+		;invoke MessageBox, hWnd,offset iamnothost,offset iamnothost,MB_OK
+		ret
 
 	   pushing:
 	   invoke Push_Zombies, Player.x,Player.y,RECT_WIDTH,RECT_HEIGHT
@@ -1750,6 +2203,8 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 	   ret
        
         closing:
+		invoke closesocket, sock
+		invoke WSACleanup 
         invoke ExitProcess, 0
  
  
@@ -1764,8 +2219,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 				mov hbmBuffer,eax
 				invoke SelectObject,hdcBuffer,hbmBuffer
 				mov hOldBuffer,eax
-
-
+				
 				invoke SetCursor,icursor
 				cmp STATUS,0
 				jne noStart
@@ -1810,7 +2264,18 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 				invoke GetPlayerAngleAndFix,hWnd
 				;DrawImage_WithMask PROC, hdc:HDC, img:HBITMAP, maskedimg:HBITMAP,  x:DWORD, y:DWORD,w:DWORD,h:DWORD,x2:DWORD,y2:DWORD,wstrech:DWORD,hstrech:DWORD
 				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player.x,Player.y,75,105,Player.CURRENTSTEP,Player.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT
+				;do cmp two players
+				;make a function that gets a code for an img and returns the hbitmap for that image #for drawing the second player in, you can't send hbitmaps because they are loaded differently in each run of the program
+				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player2.x,Player2.y,75,105,Player2.CURRENTSTEP,Player2.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT
 				invoke DrawScore,hdcBuffer
+				invoke GetStockObject,  DC_BRUSH
+        mov brushcolouring, eax
+               
+                invoke SelectObject, hdcBuffer,brushcolouring
+				
+        invoke SetDCBrushColor, hdcBuffer,   0000000000FFh
+        mov brushcolouring, eax
+			;invoke BUILDRECT,EnemyX,EnemyY,30,30,hdcBuffer,brushcolouring
 				COMMENT @
                   invoke GetStockObject,  DC_BRUSH
         mov brushcolouring, eax
@@ -1829,7 +2294,9 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
                 invoke SetDCBrushColor, hdcBuffer, 000000F0870Fh
                 mov brushcolouring,eax
                 
-                invoke bullet,hdcBuffer,brushcolouring
+                invoke bullet,hdcBuffer,brushcolouring,offset bullets
+				invoke SetDCBrushColor,hdcBuffer,0000000F87FFh
+				invoke bullet,hdcBuffer,brushcolouring,offset enemybullets
                
 			    
                
@@ -1837,6 +2304,10 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
         mov brushcolouring, eax
                 invoke SetDCBrushColor, hdcBuffer, 0077ff00h
                 mov brushcolouring,eax
+				;cmp host,TRUE
+				;je noadvance
+				;invoke AdvanceZombie_and_CheckIfDead,hWnd
+				;noadvance:
                 invoke DrawZombie,hdcBuffer,brushcolouring,hWnd
 				invoke DrawCoin,hdcBuffer,brushcolouring
 				invoke Draw_Packs,hdcBuffer
@@ -1848,6 +2319,8 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 	invoke SelectObject,hdcBuffer,hOldBuffer
 	invoke DeleteObject,hbmBuffer
 	invoke DeleteDC,hdcBuffer
+	invoke crt_strlen, textoffset
+				invoke TextOut, hdc, 0,0,textoffset,eax
  
         invoke EndPaint, hWnd,  addr paint
 		cmp STATUS,1
@@ -2165,6 +2638,8 @@ ZombieAdjusting:
 				
 				cmp STATUS,1
 				jne EndingTime
+				;cmp host,FALSE
+				;je EndingTime
 				invoke adjustzombie
              
               jmp EndingTime
@@ -2177,7 +2652,8 @@ ZombieAdjusting:
 			
 				cmp STATUS,1
 				jne EndingTime
-
+				;cmp host,FALSE
+				;je EndingTime
 				mov ecx,Number_To_Spawn
 				spawningloop:
 				push ecx
@@ -2359,7 +2835,40 @@ invoke SetTimer, hWnd, secondtimer, 1000, NULL ;Set the zombie adjustment time
 
 mov WINPLACE.iLength,SIZEOF WINPLACE
  
- 
+ mov textoffset, offset text
+
+invoke WSAStartup, 101h,addr wsadata 
+.if eax!=NULL 
+    invoke ExitProcess, 1;<An error occured> 
+.else 
+    xor eax, eax ;<The initialization is successful. You may proceed with other winsock calls> 
+.endif
+
+invoke socket,AF_INET,SOCK_DGRAM,0     ; Create a stream socket for internet use 
+.if eax!=INVALID_SOCKET 
+    mov sock,eax 
+.else 
+    invoke ExitProcess, 1
+.endif
+
+invoke WSAAsyncSelect, sock, hWnd,WM_SOCKET, FD_CONNECT+FD_READ+FD_CLOSE 
+            ; Register interest in connect, read and close events. 
+.if eax==SOCKET_ERROR 
+	invoke WSAGetLastError
+    invoke ExitProcess, 1;<put your error handling routine here> 
+.else 
+    xor eax, eax  ;........ 
+.endif
+
+
+mov sin.sin_family, AF_INET 
+invoke htons, Port                    ; convert port number into network byte order first 
+mov sin.sin_port,ax                  ; note that this member is a word-size param. 
+invoke inet_addr, addr IPAddress    ; convert the IP address into network byte order 
+mov sin.sin_addr,eax 
+invoke crt_strlen, offset pleaseconnectus
+invoke sendto,sock, offset pleaseconnectus, eax, 0, offset sin, sizeof sin
+invoke WSAGetLastError
 msgLoop:
  ; PeekMessage
 invoke GetMessage, addr msg, hWnd, 0, 0 ;Retrieve the messages from the window
