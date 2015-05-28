@@ -1477,27 +1477,33 @@ DrawZombie ENDP
  
  closest_player PROC,lp_x:DWORD,lp_y:DWORD,zomb_x:DWORD,zomb_y:DWORD
 
- mov eax,Player.x
- sub eax,zomb_x
+ mov esi,Player.x
+ sub esi,zomb_x
+
  mov ebx,Player.y
  sub ebx,zomb_y
+
  xor edx,edx
- imul eax,eax
+ imul esi,esi
+
  xor edx,edx
  imul ebx,ebx
- add eax,ebx
+
+ add esi,ebx
+
+
  mov ebx,Player2.x
  sub ebx,zomb_x
- mov edx,Player2.y
- sub edx,zomb_y
+ mov edi,Player2.y
+ sub edi,zomb_y
  xor edx,edx
  imul ebx,ebx
  xor edx,edx
- imul edx,edx
- add ebx,edx
+ imul edi,edi
+ add ebx,edi
  
- cmp eax,ebx
- jg firstisbigger
+ cmp esi,ebx
+ jl firstisbigger
 
  secondisbigger:
  mov edi,lp_x
