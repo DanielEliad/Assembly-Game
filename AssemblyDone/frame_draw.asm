@@ -1475,7 +1475,56 @@ jnz loopingzomb;loop loopingzomb
 ret
 DrawZombie ENDP
  
+ closest_player PROC,lp_x:DWORD,lp_y:DWORD,zomb_x:DWORD,zomb_y:DWORD
+
+ mov eax,Player.x
+ sub eax,zomb_x
+ mov ebx,Player.y
+ sub ebx,zomb_y
+ xor edx,edx
+ imul eax,eax
+ xor edx,edx
+ imul ebx,ebx
+ add eax,ebx
+ mov ebx,Player2.x
+ sub ebx,zomb_x
+ mov edx,Player2.y
+ sub edx,zomb_y
+ xor edx,edx
+ imul ebx,ebx
+ xor edx,edx
+ imul edx,edx
+ add ebx,edx
+ 
+ cmp eax,ebx
+ jg firstisbigger
+
+ secondisbigger:
+ mov edi,lp_x
+ mov eax,Player2.x
+ mov dword ptr [edi],eax
+ mov edi,lp_y
+ mov eax,Player2.y
+ mov dword ptr [edi],eax
+
+ jmp endofclosest_player
+
+ firstisbigger:
+ mov edi,lp_x
+ mov eax,Player.x
+ mov dword ptr [edi],eax
+ mov edi,lp_y
+ mov eax,Player.y
+ mov dword ptr [edi],eax
+
+ endofclosest_player:
+
+ ret
+ closest_player ENDP
+
  adjustzombie	PROC
+ local closest_x:DWORD
+ local closest_y:DWORD
  FNINIT
     mov ebx,offset zombies
                 mov ecx,80
@@ -1484,17 +1533,21 @@ DrawZombie ENDP
 				mov eax,dword ptr [ebx]
 				cmp eax,-999
 				je DeadNoAdjust
-               
+				pusha
+				cvtss2si eax,dword ptr [ebx]
+				cvtss2si edx,dword ptr [ebx+4]
+				invoke closest_player,addr closest_x,addr closest_y ,eax,edx
+				popa
                 mov esi, offset buffer
            ;=====================DELTA X=================================
-           mov ecx,Player.x
+           mov ecx,closest_x
             cvtss2si edx,dword ptr [ebx]
            sub ecx,edx
            cvtsi2ss xmm2,ecx
            movss dword ptr [esi],xmm2
            ;-------------------------------------------------------------
            ;=====================DELTA Y=================================
-           mov eax,Player.y
+           mov eax,closest_y
            cvtss2si edx,dword ptr [ebx+4]
            sub eax,edx
            cvtsi2ss xmm3,eax
