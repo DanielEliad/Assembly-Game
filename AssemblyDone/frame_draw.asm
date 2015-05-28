@@ -1180,6 +1180,8 @@ cmp dword ptr [ebx],-999
 je NoCoin
 pop ecx
 push ecx
+cmp host,FALSE
+je ContinueDrawingCoins
 invoke GetTickCount
 cmp dword ptr [ebx+8],eax
 jg ContinueDrawingCoins
