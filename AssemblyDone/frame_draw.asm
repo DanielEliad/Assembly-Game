@@ -263,7 +263,7 @@ createbulleting db 'I am creating a bullet',0
 sendingxy	db 'I am SENDING xy'
 buffer_for_strings db 100 dup(0)
 buffer_for_FPU db 1000 dup(0)
-
+player2_health_to_add DWORD 0
 .code
 
  sendlocation PROC, paramter:DWORD
@@ -307,7 +307,12 @@ buffer_for_FPU db 1000 dup(0)
 	mov [ebx], eax
 	add ebx,4
 
-	
+	cmp host,FALSE
+	je nosend_health
+	mov eax,player2_health_to_add
+	mov dword ptr [ebx],eax
+	mov player2_health_to_add,0
+	nosend_health:
 		
 	invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
 	jmp endofsendlocation
@@ -367,6 +372,8 @@ buffer_for_FPU db 1000 dup(0)
 	inc ebx
 
 	invoke RtlMoveMemory,ebx,offset coins,50*12
+	add ebx,50*12
+	invoke RtlMoveMemory,ebx,offset Packs,10*16
 	invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
 	jmp endofsendlocation
 	nosendpacks:
@@ -1083,7 +1090,7 @@ endingsearching:
 ret
 Check_If_Player_Hit_And_Remove_Life ENDP
 
-Check_If_Player_Hit_Pack_And_Remove_Pack	PROC,x:DWORD,y:DWORD
+Check_If_Player_Hit_Pack_And_Remove_Pack	PROC,x:DWORD,y:DWORD,lp_life:DWORD
 ;--------------------------------------------------------------------------------
 
 local PlayerRect:RECT
@@ -1119,7 +1126,8 @@ cmp eax,0
 je DeadPack
 popa
 mov dword ptr [ebx],-999
-add Player_Life,50
+mov edi,lp_life
+add dword ptr [edi],50;add Player_Life,50
 pusha
 DeadPack:
 popa
@@ -2066,6 +2074,13 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 						add ebx, 4
 						mov eax, [ebx]		
 						mov Player2.CURRENTACTIONMASK, eax
+
+						cmp host,TRUE
+						je dont_recieve_player2_life
+						add ebx,4
+						mov eax,dword ptr [ebx]
+						add Player_Life,eax
+						dont_recieve_player2_life:
 						jmp endofrecieve
 						
 						norecieveplayer:
@@ -2117,6 +2132,8 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 
 						inc ebx
 						invoke RtlMoveMemory,offset coins,ebx,50*12
+						add ebx,50*12
+						invoke RtlMoveMemory,offset Packs,ebx,10*16
 						jmp endofrecieve
 						norecievecoins:
 
@@ -2498,8 +2515,13 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 		jne realend
 		cmp Player_Life,0       
 		jle endgame
+		cmp host,FALSE
+		je noneedtocheck
 		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player.x,Player.y
-		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player.x,Player.y
+		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player2.x,Player2.y
+		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player.x,Player.y,offset Player_Life
+		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player2.x,Player2.y,offset player2_health_to_add
+		noneedtocheck:
 		invoke Check_If_Player_Hit_And_Remove_Life,Player.x,Player.y,RECT_WIDTH,RECT_HEIGHT
 		cmp Found,1
 		je endmovement
