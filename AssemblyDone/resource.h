@@ -17,3 +17,4 @@
 #define IDB_Back 116
 #define IDB_OptionsScreen 118
 #define IDB_Walk 117
+#define IDB_Online 120

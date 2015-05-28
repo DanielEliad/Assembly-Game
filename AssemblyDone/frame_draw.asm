@@ -264,6 +264,8 @@ sendingxy	db 'I am SENDING xy'
 buffer_for_strings db 100 dup(0)
 buffer_for_FPU db 1000 dup(0)
 player2_health_to_add DWORD 0
+Online HBITMAP	?
+OnlineMask HBITMAP	?
 .code
 
  sendlocation PROC, paramter:DWORD
@@ -721,14 +723,18 @@ imul eax,WINDOW_HEIGHT/5
 add esi,eax
 invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,(WINDOW_WIDTH*3)/4,esi,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 
-
 mov edx,WINDOW_HEIGHT/5
+
 push edx
 invoke DrawImage_WithMask,hdc,NewGame,NewGameMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 pop edx
 add edx,WINDOW_HEIGHT/5
-;invoke DrawImage_WithMask,hdc,HighScores,HighScoresMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
-;add edx,WINDOW_HEIGHT/5
+
+push edx
+invoke DrawImage_WithMask,hdc,Online,OnlineMask,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+pop edx
+add edx,WINDOW_HEIGHT/5
+
 push edx
 invoke DrawImage_WithMask,hdc,Options,OptionsMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 pop edx
@@ -764,14 +770,18 @@ mov STATUS,3
 mov StartScreenState,0
 next2:
 cmp Highlight,2
-jne idown
+jne next3
 invoke CloseProcess
+next3:
+cmp Highlight,3
+jne idown
+
 idown: 
 invoke GetAsyncKeyState,VK_DOWN
 cmp eax,0
 je iup
 inc Highlight
-cmp Highlight,2
+cmp Highlight,3
 jng nevermind
 mov Highlight,0
 nevermind:
@@ -2306,6 +2316,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 		
 		you_are_the_host:
 		mov host,TRUE
+		mov Player.x,600
 		invoke MessageBox, 0,offset iamhost,offset iamhost,MB_OK
 		ret
 
@@ -2318,21 +2329,30 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 	   pushing:
 	   invoke Push_Zombies, Player.x,Player.y,RECT_WIDTH,RECT_HEIGHT
 	   ret
+
        create:
 	   mov offsetToEndofArray,LengthofLeaf
 	   invoke CreateFont,56,50,180,90,FW_BOLD,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DECORATIVE,NULL
 	   mov MyFont,eax
-	    invoke GetModuleHandle,NULL
-        invoke LoadBitmap,eax,101
-        mov zombiebr,eax
+	   invoke GetModuleHandle,NULL
+       invoke LoadBitmap,eax,101
+       mov zombiebr,eax
 
+	   invoke GetModuleHandle,NULL
+	   invoke LoadBitmap,eax,117
+	   mov hWalk,eax
+
+	   invoke Get_Handle_To_Mask_Bitmap,	hWalk,	00ffffffh
+	   mov hWalkMask,eax
+
+		
 		invoke GetModuleHandle,NULL
-		invoke LoadBitmap,eax,117
-		mov hWalk,eax
+		invoke LoadBitmap,eax,120
+		mov Online,eax
 
-		invoke Get_Handle_To_Mask_Bitmap,	hWalk,	00ffffffh
-		mov hWalkMask,eax
-
+		invoke Get_Handle_To_Mask_Bitmap,	Online,	00ffffffh
+		mov OnlineMask,eax
+		
 		mov eax,hWalk
 		mov Player.CURRENTACTION,eax
 		mov eax,hWalkMask
