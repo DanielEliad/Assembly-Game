@@ -267,6 +267,7 @@ player2_health_to_add DWORD 0
 Online HBITMAP	?
 OnlineMask HBITMAP	?
 two_Players BYTE FALSE
+not_two_players db 'Other player disconnected',0
 .code
 
  sendlocation PROC, paramter:DWORD
@@ -815,7 +816,7 @@ next:
 cmp Highlight,1
 jne next2
 invoke connect_to_server,hWnd
-mov two_Players,TRUE
+;mov two_Players,TRUE
 mov STATUS,1
 next2:
 cmp Highlight,2
@@ -1608,9 +1609,18 @@ DrawZombie ENDP
 				cmp eax,-999
 				je DeadNoAdjust
 				pusha
+				cmp two_Players,FALSE
+				je use_player1
 				cvtss2si eax,dword ptr [ebx]
 				cvtss2si edx,dword ptr [ebx+4]
 				invoke closest_player,addr closest_x,addr closest_y ,eax,edx
+				jmp end_of_closest
+				use_player1:
+				mov eax,Player.x
+				mov closest_x,eax
+				mov eax,Player.y
+				mov closest_y,eax
+				end_of_closest:
 				popa
                 mov esi, offset buffer
            ;=====================DELTA X=================================
@@ -1835,8 +1845,8 @@ mov rc.bottom,eax
  invoke Ellipse,hdc,rc.left,rc.top,rc.right,rc.bottom
 ;invoke BUILDRECT,       BulletX,        BulletY,        Bullet_Width,Bullet_Height,hdc,brush
 pusha
-cmp host,FALSE
-je continueon
+;cmp host,FALSE
+;je continueon
 invoke Check_If_Bullet_Hit_And_Destroy_Zombie,BulletX,BulletY,Bullet_Width,Bullet_Height,offset zombies
 
 cmp eax,1
@@ -2175,7 +2185,17 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 					invoke recvfrom, sock, offset buffer_for_sock, 1024, 0,NULL,NULL
 					;invoke MessageBox, hWnd,offset irecievedsomething,offset irecievedsomething,MB_OK
 					.if connected_to_friend == TRUE
-						
+					invoke crt_strcmp,offset buffer_for_sock,offset you_are_host
+					cmp eax,0
+					je you_are_the_host
+
+					invoke crt_strcmp,offset buffer_for_sock,offset not_two_players
+					cmp eax,0
+					jne two_players_yes
+					mov connected_to_friend,FALSE
+					mov two_Players,FALSE
+					jmp endofrecieve
+					two_players_yes:
 						mov ebx, offset buffer_for_sock
 						cmp byte ptr [ebx],0
 						jne norecieveplayer
@@ -2308,6 +2328,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 
 					 invoke CreateThread, NULL, NULL, offset sendlocation,offset clientsin, NULL, NULL
 					 mov connected_to_friend, TRUE
+					 mov two_Players,TRUE
 					 ;invoke MessageBox, hWnd,offset connectedtopeer,offset connectedtopeer,MB_OK
 					.endif
 
@@ -2379,7 +2400,10 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 		
 		you_are_the_host:
 		mov host,TRUE
+		cmp two_Players,TRUE
+		je nosetx
 		mov Player.x,600
+		nosetx:
 		invoke MessageBox, 0,offset iamhost,offset iamhost,MB_OK
 		ret
 
@@ -2535,6 +2559,10 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 	   ret
        
         closing:
+		cmp two_Players,FALSE
+		je dont_send_two_players_over
+		invoke sendto,sock, offset not_two_players, 1024, 0, offset clientsin, sizeof clientsin
+		dont_send_two_players_over:
 		invoke closesocket, sock
 		invoke WSACleanup 
         invoke ExitProcess, 0
@@ -2598,7 +2626,10 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player.x,Player.y,75,105,Player.CURRENTSTEP,Player.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT
 				;do cmp two players
 				;make a function that gets a code for an img and returns the hbitmap for that image #for drawing the second player in, you can't send hbitmaps because they are loaded differently in each run of the program
+				cmp two_Players,FALSE
+				je dontdrawplayer2
 				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player2.x,Player2.y,75,105,Player2.CURRENTSTEP,Player2.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT
+				dontdrawplayer2:
 				invoke DrawScore,hdcBuffer
 				invoke GetStockObject,  DC_BRUSH
         mov brushcolouring, eax
@@ -3126,6 +3157,8 @@ OtherInstances:
 
 	endgame:
 	cmp two_Players,FALSE
+	je nosend_host
+	cmp host,FALSE
 	je nosend_host
 	invoke sendto,sock, offset you_are_host, 1024, 0, offset clientsin, sizeof clientsin
 	mov connected_to_friend,FALSE

@@ -1,32 +1,32 @@
-﻿Build started 29/05/2015 14:54:55.
+﻿Build started 29/05/2015 15:38:10.
      1>Project "C:\NEW_PROJECT\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Rebuild target(s)).
-     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppClean.targets(76,5): warning : The process cannot access the file 'c:\new_project\assembly-game\debug\assemblydone.exe' because it is being used by another process.
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppClean.targets(76,5): warning : The process cannot access the file 'c:\new_project\assembly-game\debug\assemblydone.pdb' because it is being used by another process.
      1>_MASM:
          Assembling frame_draw.asm...
-         cmd.exe /C "C:\Users\Daniel\AppData\Local\Temp\tmp48c1b52f2d6042d2a7433f1e47bf420b.cmd"
+         cmd.exe /C "C:\Users\Daniel\AppData\Local\Temp\tmp540c3a8ee191411ba9601337cf71ae1b.cmd"
          ml.exe /c /nologo /Zi /Fo"Debug\frame_draw.obj" /W3 /errorReport:prompt  /Taframe_draw.asm
-     1>frame_draw.asm(3227): warning A6001: no return from procedure
-     1>frame_draw.asm(416): warning A6004: procedure argument or local not referenced : paramter
-     1>frame_draw.asm(487): warning A6004: procedure argument or local not referenced : tempto
-     1>frame_draw.asm(487): warning A6004: procedure argument or local not referenced : tempfrom
-     1>frame_draw.asm(651): warning A6004: procedure argument or local not referenced : hold
-     1>frame_draw.asm(651): warning A6004: procedure argument or local not referenced : hold2
-     1>frame_draw.asm(715): warning A6004: procedure argument or local not referenced : hdc
-     1>frame_draw.asm(715): warning A6004: procedure argument or local not referenced : Highlighted
-     1>frame_draw.asm(908): warning A6004: procedure argument or local not referenced : radix
-     1>frame_draw.asm(1293): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(1293): warning A6004: procedure argument or local not referenced : hdcMem1
-     1>frame_draw.asm(1293): warning A6004: procedure argument or local not referenced : hOld
-     1>frame_draw.asm(1380): warning A6004: procedure argument or local not referenced : hdcMem
-     1>frame_draw.asm(1544): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(1800): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(1861): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(3135): warning A6004: procedure argument or local not referenced : brushcolouring2
-     1>frame_draw.asm(3135): warning A6004: procedure argument or local not referenced : hdcMem
-     1>frame_draw.asm(3135): warning A6004: procedure argument or local not referenced : hbmOld
-     1>frame_draw.asm(3135): warning A6004: procedure argument or local not referenced : bm
-     1>frame_draw.asm(3135): warning A6004: procedure argument or local not referenced : rectforpic
-     1>frame_draw.asm(3227): warning A6004: procedure argument or local not referenced : animcls
+     1>frame_draw.asm(3260): warning A6001: no return from procedure
+     1>frame_draw.asm(417): warning A6004: procedure argument or local not referenced : paramter
+     1>frame_draw.asm(488): warning A6004: procedure argument or local not referenced : tempto
+     1>frame_draw.asm(488): warning A6004: procedure argument or local not referenced : tempfrom
+     1>frame_draw.asm(652): warning A6004: procedure argument or local not referenced : hold
+     1>frame_draw.asm(652): warning A6004: procedure argument or local not referenced : hold2
+     1>frame_draw.asm(716): warning A6004: procedure argument or local not referenced : hdc
+     1>frame_draw.asm(716): warning A6004: procedure argument or local not referenced : Highlighted
+     1>frame_draw.asm(909): warning A6004: procedure argument or local not referenced : radix
+     1>frame_draw.asm(1294): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(1294): warning A6004: procedure argument or local not referenced : hdcMem1
+     1>frame_draw.asm(1294): warning A6004: procedure argument or local not referenced : hOld
+     1>frame_draw.asm(1381): warning A6004: procedure argument or local not referenced : hdcMem
+     1>frame_draw.asm(1545): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(1810): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(1871): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(3168): warning A6004: procedure argument or local not referenced : brushcolouring2
+     1>frame_draw.asm(3168): warning A6004: procedure argument or local not referenced : hdcMem
+     1>frame_draw.asm(3168): warning A6004: procedure argument or local not referenced : hbmOld
+     1>frame_draw.asm(3168): warning A6004: procedure argument or local not referenced : bm
+     1>frame_draw.asm(3168): warning A6004: procedure argument or local not referenced : rectforpic
+     1>frame_draw.asm(3260): warning A6004: procedure argument or local not referenced : animcls
        ResourceCompile:
          C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"Debug\resource.res" resource.rc 
        Link:
@@ -37,4 +37,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.54
+Time Elapsed 00:00:01.18
