@@ -309,12 +309,19 @@ OnlineMask HBITMAP	?
 	mov [ebx], eax
 	add ebx,4
 
+	
+
 	cmp host,FALSE
-	je nosend_health
+	je nosend_health_and_score
+
+	mov eax,scoreNum
+	mov [ebx],eax
+	add ebx,4
+
 	mov eax,player2_health_to_add
 	mov dword ptr [ebx],eax
 	mov player2_health_to_add,0
-	nosend_health:
+	nosend_health_and_score:
 		
 	invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
 	jmp endofsendlocation
@@ -747,6 +754,46 @@ invoke DrawImage_WithMask,hdc,Exiting,ExitingMasked,(WINDOW_WIDTH*3)/4,edx,240,6
 ret
 DrawStartScreenButtons ENDP
 
+connect_to_server PROC,hWnd:HWND
+
+ mov textoffset, offset text
+
+invoke WSAStartup, 101h,addr wsadata 
+.if eax!=NULL 
+    invoke ExitProcess, 1;<An error occured> 
+.else 
+    xor eax, eax ;<The initialization is successful. You may proceed with other winsock calls> 
+.endif
+
+invoke socket,AF_INET,SOCK_DGRAM,0     ; Create a stream socket for internet use 
+.if eax!=INVALID_SOCKET 
+    mov sock,eax 
+.else 
+    invoke ExitProcess, 1
+.endif
+
+invoke WSAAsyncSelect, sock, hWnd,WM_SOCKET, FD_READ 
+            ; Register interest in connect, read and close events. 
+.if eax==SOCKET_ERROR 
+	invoke WSAGetLastError
+    invoke ExitProcess, 1;<put your error handling routine here> 
+.else 
+    xor eax, eax  ;........ 
+.endif
+
+
+mov sin.sin_family, AF_INET 
+invoke htons, Port                    ; convert port number into network byte order first 
+mov sin.sin_port,ax                  ; note that this member is a word-size param. 
+invoke inet_addr, addr IPAddress    ; convert the IP address into network byte order 
+mov sin.sin_addr,eax 
+invoke crt_strlen, offset pleaseconnectus
+invoke sendto,sock, offset pleaseconnectus, eax, 0, offset sin, sizeof sin
+invoke WSAGetLastError
+
+ret
+connect_to_server ENDP
+
 StartScreen PROC,hdc:HDC,hWnd:HWND
 ;--------------------------------------------------------------------------------
 inc	FramesSinceLastClick
@@ -766,16 +813,22 @@ jmp idown
 next:
 cmp Highlight,1
 jne next2
-mov STATUS,3
-mov StartScreenState,0
+
+invoke connect_to_server,hWnd
+mov STATUS,1
 next2:
 cmp Highlight,2
 jne next3
+jne next2
+mov STATUS,3
+mov StartScreenState,0
 invoke CloseProcess
 next3:
 cmp Highlight,3
 jne idown
+invoke CloseProcess
 
+jmp finishbutton
 idown: 
 invoke GetAsyncKeyState,VK_DOWN
 cmp eax,0
@@ -922,6 +975,10 @@ je next
 found:
 popa;------------------------------------------
 inc dword ptr [ebx+16]
+cmp dword ptr [ebx+16],3
+jl noaddscore
+add scoreNum,50
+noaddscore:
 mov eax,1;Found
 jmp endingsearching
 
@@ -1342,7 +1399,7 @@ addss xmm1, dword ptr [ebx+8]
 movss dword ptr [ebx+4],xmm1
 jmp next
 deadz:
-add scoreNum,50
+;add scoreNum,50
 sub Time_Between_Steps,50
 pusha;--------------------------------
 cvtss2si eax,dword ptr [ebx]
@@ -1454,7 +1511,7 @@ add eax,Time_Between_Steps
 mov dword ptr [ebx+32],eax
 jmp next
 deadz:
-add scoreNum,50
+;add scoreNum,50
 sub Time_Between_Steps,50
 pusha
 cvtss2si eax,dword ptr [ebx]
@@ -2145,13 +2202,18 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 						add ebx, 4
 						mov eax, [ebx]		
 						mov Player2.CURRENTACTIONMASK, eax
-
+						
 						cmp host,TRUE
-						je dont_recieve_player2_life
+						je dont_recieve_player2_life_and_score
+						
+						add ebx,4
+						mov eax,[ebx]
+						mov scoreNum,eax
+						
 						add ebx,4
 						mov eax,dword ptr [ebx]
 						add Player_Life,eax
-						dont_recieve_player2_life:
+						dont_recieve_player2_life_and_score:
 						jmp endofrecieve
 						
 						norecieveplayer:
@@ -3112,9 +3174,11 @@ invoke SetTimer, hWnd, secondtimer, 1000, NULL ;Set the zombie adjustment time
 
 
 mov WINPLACE.iLength,SIZEOF WINPLACE
+
  
  mov textoffset, offset text
 
+COMMENT @
 invoke WSAStartup, 101h,addr wsadata 
 .if eax!=NULL 
     invoke ExitProcess, 1;<An error occured> 
@@ -3147,6 +3211,7 @@ mov sin.sin_addr,eax
 invoke crt_strlen, offset pleaseconnectus
 invoke sendto,sock, offset pleaseconnectus, eax, 0, offset sin, sizeof sin
 invoke WSAGetLastError
+@
 msgLoop:
  ; PeekMessage
 invoke GetMessage, addr msg, hWnd, 0, 0 ;Retrieve the messages from the window
