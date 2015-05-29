@@ -266,6 +266,7 @@ buffer_for_FPU db 1000 dup(0)
 player2_health_to_add DWORD 0
 Online HBITMAP	?
 OnlineMask HBITMAP	?
+two_Players BYTE FALSE
 .code
 
  sendlocation PROC, paramter:DWORD
@@ -813,8 +814,8 @@ jmp idown
 next:
 cmp Highlight,1
 jne next2
-
 invoke connect_to_server,hWnd
+mov two_Players,TRUE
 mov STATUS,1
 next2:
 cmp Highlight,2
@@ -3124,6 +3125,11 @@ OtherInstances:
         ret
 
 	endgame:
+	cmp two_Players,FALSE
+	je nosend_host
+	invoke sendto,sock, offset you_are_host, 1024, 0, offset clientsin, sizeof clientsin
+	mov connected_to_friend,FALSE
+	nosend_host:
 	invoke MessageBox, hWnd,offset deadmsg,offset deadcaption,MB_OK
 	jmp closing
 ProjectWndProc  ENDP
