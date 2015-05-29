@@ -82,6 +82,7 @@ ChanceToDropHealthPack	equ	7
 Space_Between_Player_Width	equ 64
 Space_Between_Player_Height	equ	52
 LengthofLeaf equ 12
+Distance_Between_Zombie_And_Player equ 300
 .data
 expectingip	db 'I am now expecting IP',0
 
@@ -268,6 +269,18 @@ Online HBITMAP	?
 OnlineMask HBITMAP	?
 two_Players BYTE FALSE
 not_two_players db 'Other player disconnected',0
+Waiting_cut_x DWORD 0
+Waiting_zomb_x DWORD 50
+Waiting_zomb_y DWORD 200
+Time_Between_Steps_waiting DWORD 75 ;In milliseconds
+Time_Step_Should_End DWORD ?
+WaitingScreenBMP HBITMAP ?
+WaitingScreenBMPMask HBITMAP ?
+Waiting_player_x DWORD -Distance_Between_Zombie_And_Player
+Waiting_player_cut_x DWORD 0
+Waiting_player_y DWORD 200
+Time_Step_Should_End_Player DWORD ?
+Time_Between_Steps_waiting_player DWORD 75
 .code
 
  sendlocation PROC, paramter:DWORD
@@ -663,7 +676,13 @@ GetRandomNumber ENDP
 
 CloseProcess	PROC
 ;--------------------------------------------------------------------------------
-invoke ExitProcess, 0
+		cmp two_Players,FALSE
+		je dont_send_two_players_over
+		invoke sendto,sock, offset not_two_players, 1024, 0, offset clientsin, sizeof clientsin
+		dont_send_two_players_over:
+		invoke closesocket, sock
+		invoke WSACleanup 
+        invoke ExitProcess, 0
 ;================================================================================
 ret
 CloseProcess ENDP
@@ -708,6 +727,71 @@ local HOld:HDC
 ret
 DrawImage_WithMask ENDP
 
+
+WaitingScreen PROC,hdc:HDC
+;--------------------------------------------------------------------------------
+invoke DrawImage,hdc,WaitingScreenBMP,0,0,0,0,1024,1024,WINDOW_WIDTH,WINDOW_HEIGHT
+
+invoke DrawImage_WithMask,hdc,Rightz,RightzMask,Waiting_zomb_x,Waiting_zomb_y,30,40,Waiting_cut_x,0,Zombie_Width*5,Zombie_Height*5
+invoke DrawImage_WithMask,hdc,hWalk,hWalkMask,Waiting_player_x,Waiting_player_y,75,105,Waiting_player_cut_x,385,Zombie_Width*5,Zombie_Height*5
+
+;---------------------------ZOMBIE---------------------------------
+invoke GetTickCount
+cmp Time_Step_Should_End,eax
+jg no_need_to_advance_zomb
+cmp Waiting_cut_x,70
+jl noend_zomb
+mov Waiting_cut_x,0
+invoke GetTickCount
+add eax,Time_Between_Steps_waiting
+mov Time_Step_Should_End,eax
+add Waiting_zomb_x,20
+jmp no_need_to_advance_zomb
+noend_zomb:
+add Waiting_cut_x,35
+invoke GetTickCount
+add eax,Time_Between_Steps_waiting
+mov Time_Step_Should_End,eax
+add Waiting_zomb_x,20
+no_need_to_advance_zomb:
+
+
+cmp Waiting_zomb_x,WINDOW_WIDTH+Distance_Between_Zombie_And_Player; Player_x on purpose
+jl dont_reset_zomb
+mov Waiting_zomb_x,-Zombie_Width*5; Player_x on purpose
+dont_reset_zomb:
+;---------------------------PLAYER---------------------------------
+invoke GetTickCount
+cmp Time_Step_Should_End_Player,eax
+jg no_need_to_advance
+cmp Waiting_player_cut_x,1000
+jl noend
+mov Waiting_player_cut_x,0
+invoke GetTickCount
+add eax,Time_Between_Steps_waiting_player
+mov Time_Step_Should_End_Player,eax
+add Waiting_player_x,20
+jmp no_need_to_advance
+noend:
+add Waiting_player_cut_x,127
+invoke GetTickCount
+add eax,Time_Between_Steps_waiting_player
+mov Time_Step_Should_End_Player,eax
+add Waiting_player_x,20
+no_need_to_advance:
+
+
+cmp Waiting_player_x,WINDOW_WIDTH
+jl dont_reset
+mov Waiting_player_x,-Zombie_Width*5-Distance_Between_Zombie_And_Player
+dont_reset:
+
+;================================================================================
+ret
+WaitingScreen ENDP
+
+
+
 DrawOptionScreenButtons PROC,hdc:HDC,Highlighted:DWORD
 ;--------------------------------------------------------------------------------
 
@@ -718,7 +802,7 @@ DrawOptionScreenButtons ENDP
 OptionsScreen PROC,hdc:HDC
 ;--------------------------------------------------------------------------------
 invoke DrawImage,hdc,OptionScreenhbitmap,0,0,0,0,1920,1040,WINDOW_WIDTH,WINDOW_HEIGHT
-mov Highlight,0
+
 ;invoke DrawOptionScreenButtons,hdc,Highlight
 ;================================================================================
 ret
@@ -811,20 +895,23 @@ cmp Highlight,0
 jne next
 mov STATUS,1
 invoke SetTimer, hWnd, RoundEnded, TimeTillRoundEnds, NULL ;Set the time til the store
-jmp idown
+jmp finishbutton
 next:
 cmp Highlight,1
 jne next2
 invoke connect_to_server,hWnd
 ;mov two_Players,TRUE
-mov STATUS,1
+invoke GetTickCount
+mov Time_Step_Should_End,eax
+mov Time_Step_Should_End_Player,eax
+mov STATUS,4
+jmp finishbutton
 next2:
 cmp Highlight,2
 jne next3
-jne next2
 mov STATUS,3
-mov StartScreenState,0
-invoke CloseProcess
+mov Highlight,0
+jmp finishbutton
 next3:
 cmp Highlight,3
 jne idown
@@ -2432,6 +2519,12 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 	   invoke Get_Handle_To_Mask_Bitmap,	hWalk,	00ffffffh
 	   mov hWalkMask,eax
 
+	   invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,121
+		mov WaitingScreenBMP,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	WaitingScreenBMP,	00ffffffh
+		mov WaitingScreenBMPMask,eax
 		
 		invoke GetModuleHandle,NULL
 		invoke LoadBitmap,eax,120
@@ -2560,13 +2653,13 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
        
         closing:
 		cmp two_Players,FALSE
-		je dont_send_two_players_over
-		invoke sendto,sock, offset not_two_players, 1024, 0, offset clientsin, sizeof clientsin
-		dont_send_two_players_over:
-		invoke closesocket, sock
-		invoke WSACleanup 
-        invoke ExitProcess, 0
- 
+	je nosend_host_close
+	cmp host,FALSE
+	je nosend_host
+	invoke sendto,sock, offset you_are_host, 1024, 0, offset clientsin, sizeof clientsin
+	mov connected_to_friend,FALSE
+	nosend_host_close:
+		invoke CloseProcess	
  
  
         painting:
@@ -2600,6 +2693,11 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 				jmp endingofpainting
 				noOptions:
 				
+				cmp STATUS,4
+				jne noWaitingForOtherPlayer
+				invoke WaitingScreen,hdcBuffer
+				jmp endingofpainting
+				noWaitingForOtherPlayer:
 
                 cmp RECT_WIDTH,RECT_WIDTH_BACKUP
                 je iflat
@@ -3164,7 +3262,7 @@ OtherInstances:
 	mov connected_to_friend,FALSE
 	nosend_host:
 	invoke MessageBox, hWnd,offset deadmsg,offset deadcaption,MB_OK
-	jmp closing
+	invoke CloseProcess
 ProjectWndProc  ENDP
  
 main PROC
