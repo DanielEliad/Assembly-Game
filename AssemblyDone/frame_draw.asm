@@ -334,7 +334,10 @@ ArrowBMPMask HBITMAP ?
 	mov [ebx], eax
 	add ebx,4
 
-	
+	push ebx
+	invoke RtlMoveMemory,ebx,offset bullets,24*40
+	pop ebx
+	add ebx,24*40
 
 	cmp host,FALSE
 	je nosend_health_and_score
@@ -359,9 +362,11 @@ ArrowBMPMask HBITMAP ?
 	mov byte ptr [ebx],1
 	inc ebx
 	push ebx
-	invoke RtlMoveMemory ,ebx,offset bullets,50*16
+	mov esi,offset bullets
+	add esi,24*40
+	invoke RtlMoveMemory ,ebx,esi,24*40
 	invoke sendto,sock, offset infobuffer, 1024, 0, offset clientsin, sizeof clientsin
-
+	pop ebx
 	jmp endofsendlocation
 
 	nosendbullets:
@@ -1979,11 +1984,10 @@ bullet PROC,hdc:HDC,brush:HBRUSH,lp_bullets_array:DWORD,hWnd:HWND
 ;--------------------------------------------------------------------------------
 local rc:RECT
 local testrc:RECT
-
 FNINIT
 ;invoke SetGraphicsMode,hdc,GM_ADVANCED
 mov ebx,lp_bullets_array
-mov ecx,50
+mov ecx,48
  
 loopingbull:
  pusha
@@ -2446,6 +2450,8 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 						mov eax, [ebx]		
 						mov Player2.CURRENTACTIONMASK, eax
 						
+						add ebx,4
+						invoke RtlMoveMemory,offset enemybullets,ebx,24*40
 						cmp host,TRUE
 						je dont_recieve_player2_life_and_score
 						
@@ -2472,7 +2478,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 								
 
 						inc ebx
-						invoke RtlMoveMemory ,offset enemybullets,ebx,50*16
+						invoke RtlMoveMemory ,offset enemybullets,ebx,24*40
 
 						jmp endofrecieve
 
@@ -3325,7 +3331,7 @@ timing:
             je EndingTime
 			invoke GetWindowPlacement,hWnd,OFFSET WINPLACE
 			mov ebx, offset bullets
-			mov ecx,50
+			mov ecx,48
 			loopingcheckingempty:
 		   cmp dword ptr [ebx],-999
 		   jne nexting
