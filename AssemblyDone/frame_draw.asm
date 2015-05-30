@@ -3551,25 +3551,7 @@ invoke CreateWindowExA, WS_EX_COMPOSITED, addr ClassName, addr windowTitle, WS_S
 mov hWnd, eax ;Save the handle
 invoke ShowWindow, eax, SW_SHOW ;Show it
 
-COMMENT @
-invoke RtlZeroMemory, addr animcls, SIZEOF wndcls ;Empty the window class
-;mov eax, offset AnimClassName
-mov animcls.lpszClassName, offset AnimClassName ;Set the class name
-invoke GetStockObject, BLACK_BRUSH
-mov animcls.hbrBackground, eax ;Set the background color as black
-;mov eax, ProjectWndProc
-;mov animcls.lpfnWndProc, eax ;Set the procedure that handles the window messages
-invoke RegisterClassA, addr animcls ;Register the class
 
-invoke GetModuleHandle,NULL 
-invoke CreateWindowEx , ANIMATE_CLASSA, addr AnimWindowName,	hWnd,200,ACS_AUTOPLAY,eax
-invoke ShowWindow, eax, SW_SHOW ;Show it
-
-
-;CreateWindow(ANIMATE_CLASS,NULL,s,0,0,0,0,w,(HMENU)(i),hI,NULL)
-;invoke GetModuleHandle,NULL
-;invoke Animate_Create,hWnd,200,ACS_AUTOPLAY,eax
-@
 invoke SetTimer, hWnd, MAIN_TIMER_ID, 20, NULL ;Set the repaint timer
 invoke SetTimer, hWnd, ShootingTime, 125, NULL ;Set the shooting time
 invoke SetTimer, hWnd, ZombieTime, Zombie_Spawning_Time , NULL ;Set the zombie time
@@ -3582,40 +3564,7 @@ mov WINPLACE.iLength,SIZEOF WINPLACE
  
  mov textoffset, offset text
 
-COMMENT @
-invoke WSAStartup, 101h,addr wsadata 
-.if eax!=NULL 
-    invoke ExitProcess, 1;<An error occured> 
-.else 
-    xor eax, eax ;<The initialization is successful. You may proceed with other winsock calls> 
-.endif
 
-invoke socket,AF_INET,SOCK_DGRAM,0     ; Create a stream socket for internet use 
-.if eax!=INVALID_SOCKET 
-    mov sock,eax 
-.else 
-    invoke ExitProcess, 1
-.endif
-
-invoke WSAAsyncSelect, sock, hWnd,WM_SOCKET, FD_READ 
-            ; Register interest in connect, read and close events. 
-.if eax==SOCKET_ERROR 
-	invoke WSAGetLastError
-    invoke ExitProcess, 1;<put your error handling routine here> 
-.else 
-    xor eax, eax  ;........ 
-.endif
-
-
-mov sin.sin_family, AF_INET 
-invoke htons, Port                    ; convert port number into network byte order first 
-mov sin.sin_port,ax                  ; note that this member is a word-size param. 
-invoke inet_addr, addr IPAddress    ; convert the IP address into network byte order 
-mov sin.sin_addr,eax 
-invoke crt_strlen, offset pleaseconnectus
-invoke sendto,sock, offset pleaseconnectus, eax, 0, offset sin, sizeof sin
-invoke WSAGetLastError
-@
 msgLoop:
  ; PeekMessage
 invoke GetMessage, addr msg, hWnd, 0, 0 ;Retrieve the messages from the window
