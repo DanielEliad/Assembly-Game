@@ -20,3 +20,11 @@
 #define IDB_Online 120
 #define IDB_Waiting 121
 #define IDB_Arrow 122
+#define IDB_OnlineF 123
+#define IDB_RotationF 124
+#define IDB_VectorsF 125
+#define IDB_Mechanics 126
+#define IDB_MechanicsS 127
+#define IDB_VectorsP 128
+#define IDB_RotationP 129
+#define IDB_OnlineP 130
