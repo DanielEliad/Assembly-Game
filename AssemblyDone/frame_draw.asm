@@ -72,8 +72,8 @@ RoundEnded	equ	4
 secondtimer	equ	5
 Zombie_Height equ 50
 Zombie_Width equ 40
-Bullet_Height equ 10
-Bullet_Width equ 10
+Bullet_Height equ 25
+Bullet_Width equ 50
 Coin_Height	equ	30
 Coin_Width	equ	30
 Health_Pack_Width	equ	50
@@ -281,6 +281,16 @@ Waiting_player_cut_x DWORD 0
 Waiting_player_y DWORD 200
 Time_Step_Should_End_Player DWORD ?
 Time_Between_Steps_waiting_player DWORD 75
+xForm XFORM <>
+sin_angle_world REAL4 0.866
+cos_angle_world	REAL4 0.5
+minus_sin_angle_world REAL4 -0.5
+ZeroPointZero REAL4 0.0
+OnePointZero REAL4 1.0
+normal_xForm XFORM <>
+Minus1 REAL4 -1.0
+ArrowBMP HBITMAP ?
+ArrowBMPMask HBITMAP ?
 .code
 
  sendlocation PROC, paramter:DWORD
@@ -705,15 +715,20 @@ local HOld:HBITMAP
 ret
 DrawImage ENDP
 
-DrawImage_WithMask PROC, hdc:HDC, img:HBITMAP, maskedimg:HBITMAP,  x:DWORD, y:DWORD,w:DWORD,h:DWORD,x2:DWORD,y2:DWORD,wstrech:DWORD,hstrech:DWORD
+DrawImage_WithMask PROC, hdc:HDC, img:HBITMAP, maskedimg:HBITMAP,  x:DWORD, y:DWORD,w:DWORD,h:DWORD,x2:DWORD,y2:DWORD,wstrech:DWORD,hstrech:DWORD,lp_xForm:DWORD
 ;--------------------------------------------------------------------------------
 local hdcMem:HDC
 local HOld:HDC
   invoke CreateCompatibleDC, hdc
   mov hdcMem, eax
+  ;invoke SetGraphicsMode,hdcMem,GM_ADVANCED
+  ; mov edi,lp_xForm
+  ;invoke SetWorldTransform,hdcMem,edi
   invoke SelectObject, hdcMem, maskedimg
   mov HOld,eax
   invoke SetStretchBltMode,hdc,COLORONCOLOR
+ 
+  
   invoke StretchBlt ,hdc,x,y,wstrech,hstrech,hdcMem,x2,y2,w,h,SRCAND
 		
   invoke SelectObject, hdcMem, img
@@ -732,8 +747,8 @@ WaitingScreen PROC,hdc:HDC
 ;--------------------------------------------------------------------------------
 invoke DrawImage,hdc,WaitingScreenBMP,0,0,0,0,1024,1024,WINDOW_WIDTH,WINDOW_HEIGHT
 
-invoke DrawImage_WithMask,hdc,Rightz,RightzMask,Waiting_zomb_x,Waiting_zomb_y,30,40,Waiting_cut_x,0,Zombie_Width*5,Zombie_Height*5
-invoke DrawImage_WithMask,hdc,hWalk,hWalkMask,Waiting_player_x,Waiting_player_y,75,105,Waiting_player_cut_x,385,Zombie_Width*5,Zombie_Height*5
+invoke DrawImage_WithMask,hdc,Rightz,RightzMask,Waiting_zomb_x,Waiting_zomb_y,30,40,Waiting_cut_x,0,Zombie_Width*5,Zombie_Height*5,offset normal_xForm
+invoke DrawImage_WithMask,hdc,hWalk,hWalkMask,Waiting_player_x,Waiting_player_y,75,105,Waiting_player_cut_x,385,Zombie_Width*5,Zombie_Height*5,offset normal_xForm
 
 ;---------------------------ZOMBIE---------------------------------
 invoke GetTickCount
@@ -814,25 +829,24 @@ mov esi,WINDOW_HEIGHT/5
 mov eax,Highlighted
 imul eax,WINDOW_HEIGHT/5
 add esi,eax
-invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,(WINDOW_WIDTH*3)/4,esi,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
-
+invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,(WINDOW_WIDTH*3)/4,esi,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10,offset normal_xForm
 mov edx,WINDOW_HEIGHT/5
 
 push edx
-invoke DrawImage_WithMask,hdc,NewGame,NewGameMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,NewGame,NewGameMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10,offset normal_xForm
 pop edx
 add edx,WINDOW_HEIGHT/5
 
 push edx
-invoke DrawImage_WithMask,hdc,Online,OnlineMask,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,Online,OnlineMask,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10,offset normal_xForm
 pop edx
 add edx,WINDOW_HEIGHT/5
 
 push edx
-invoke DrawImage_WithMask,hdc,Options,OptionsMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,Options,OptionsMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10,offset normal_xForm
 pop edx
 add edx,WINDOW_HEIGHT/5
-invoke DrawImage_WithMask,hdc,Exiting,ExitingMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,Exiting,ExitingMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10,offset normal_xForm
 
 
 
@@ -943,8 +957,8 @@ StartScreen ENDP
 
 DrawStoreStands	PROC,hdc:HDC
 ;--------------------------------------------------------------------------------
-invoke DrawImage_WithMask,hdc,cost,costMasked,760,400,182,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/7
-invoke DrawImage_WithMask,hdc,cost,costMasked,760,600,182,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/7
+invoke DrawImage_WithMask,hdc,cost,costMasked,760,400,182,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/7,offset normal_xForm
+invoke DrawImage_WithMask,hdc,cost,costMasked,760,600,182,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/7,offset normal_xForm
 
 ;================================================================================
 ret
@@ -997,7 +1011,7 @@ itoa	ENDP
 
 DrawScore	PROC,hdc:HDC
 ;--------------------------------------------------------------------------------
-invoke DrawImage_WithMask,hdc,score,scoreMasked,20,20,150,56,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/8
+invoke DrawImage_WithMask,hdc,score,scoreMasked,20,20,150,56,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/8,offset normal_xForm
 invoke itoa,scoreNum,offset scoreBuffer,10
 push eax
 
@@ -1039,7 +1053,7 @@ add eax,h
 mov rect.bottom,eax
  
 mov ebx,lp_zombies
-mov ecx,80
+mov ecx,50
  
 searchingforhits:
 pusha;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1349,7 +1363,7 @@ ContinueDrawingCoins:
 	pop ecx
 	push ecx
 	
-	invoke DrawImage_WithMask,hdc,hCoinColour,hCoinMask,dword ptr [ebx],dword ptr [ebx+4],Coin_Width,Coin_Height,0,0,Coin_Width,Coin_Height;CHANGE TO WINDO_WIDTH/X AND WINDOW_HEIGHT/Y
+	invoke DrawImage_WithMask,hdc,hCoinColour,hCoinMask,dword ptr [ebx],dword ptr [ebx+4],Coin_Width,Coin_Height,0,0,Coin_Width,Coin_Height,offset normal_xForm;CHANGE TO WINDO_WIDTH/X AND WINDOW_HEIGHT/Y
 	COMMENT @
 	invoke CreateCompatibleDC,hdc
 	mov hdcMem1,eax
@@ -1435,7 +1449,7 @@ jmp nopack
 
 ContinueDrawingPacks:
 
-    invoke DrawImage_WithMask,hdc,hHealthPackColour,hHealthPackMask,dword ptr [ebx],dword ptr [ebx+4],Health_Pack_Width,Health_Pack_Height,0,0,Health_Pack_Width,Health_Pack_Height;CHANGE TO WINDO_WIDTH/X AND WINDOW_HEIGHT/Y
+    invoke DrawImage_WithMask,hdc,hHealthPackColour,hHealthPackMask,dword ptr [ebx],dword ptr [ebx+4],Health_Pack_Width,Health_Pack_Height,0,0,Health_Pack_Width,Health_Pack_Height,offset normal_xForm;CHANGE TO WINDO_WIDTH/X AND WINDOW_HEIGHT/Y
 
 	COMMENT @
 	invoke CreateCompatibleDC,hdc
@@ -1581,8 +1595,8 @@ mov edx,dword ptr [ebx+28]
 ;DOES NOT WORK WITH ONLINE - BITMAPS ARE LOADED DIFFERENTLY IN DIFFERENT PROGRAMS----------------------------
 ;SOLUTION: MAKE A FUNCTION THAT RECIEVES BITMAP_ID,AND CREATES IT'S BITMAP
 invoke BITMAP_ID_TO_HBITMAP,dword ptr [ebx+20]
- invoke DrawImage_WithMask,hdc,eax,edx,ZombieX,ZombieY,30,40,dword ptr [ebx+28],0,Zombie_Width,Zombie_Height;,WINDOW_WIDTH/25,WINDOW_HEIGHT/22
-;invoke BUILDRECT,       ZombieX,        ZombieY,        Zombie_Height,Zombie_Width,hdc,brush
+ invoke DrawImage_WithMask,hdc,eax,edx,ZombieX,ZombieY,30,40,dword ptr [ebx+28],0,Zombie_Width,Zombie_Height,offset normal_xForm ;,WINDOW_WIDTH/25,WINDOW_HEIGHT/22
+ ;invoke BUILDRECT,       ZombieX,        ZombieY,        Zombie_Height,Zombie_Width,hdc,brush
 invoke GetTickCount
 cmp dword ptr [ebx+32],eax
 jg next
@@ -1868,7 +1882,8 @@ add eax,Bullet_Height
 mov rc.bottom,eax
  pusha
  
- invoke Ellipse,hdc,rc.left,rc.top,rc.right,rc.bottom
+ ;invoke Ellipse,hdc,rc.left,rc.top,rc.right,rc.bottom
+
 ;invoke BUILDRECT,       BulletX,        BulletY,        Bullet_Width,Bullet_Height,hdc,brush
 pusha
 cmp host,FALSE
@@ -1896,11 +1911,35 @@ jnz loopingbull;loop loopingbull
 ret
 enemybullet ENDP
 
+GetSinAndCos PROC,lp_sin:DWORD,lp_cos:DWORD,lp_minus_sin:DWORD,muled_sin:DWORD,muled_cos:DWORD
+;--------------------------------------------------------------------------------
+ movss xmm0,muled_sin
+ divss xmm0,VEL
+ mov edi,lp_sin
+ movss dword ptr [edi],xmm0
+ 
+ movss xmm0,muled_cos
+ divss xmm0,VEL
+ mov edi,lp_cos
+ movss dword ptr [edi],xmm0
 
-bullet PROC,hdc:HDC,brush:HBRUSH,lp_bullets_array:DWORD
+
+ movss xmm0,muled_sin
+ divss xmm0,VEL
+ mulss xmm0,Minus1
+ mov edi,lp_minus_sin
+ movss dword ptr [edi],xmm0
+;================================================================================
+ret
+GetSinAndCos ENDP
+
+bullet PROC,hdc:HDC,brush:HBRUSH,lp_bullets_array:DWORD,hWnd:HWND
 ;--------------------------------------------------------------------------------
 local rc:RECT
+local testrc:RECT
+
 FNINIT
+;invoke SetGraphicsMode,hdc,GM_ADVANCED
 mov ebx,lp_bullets_array
 mov ecx,50
  
@@ -1910,11 +1949,55 @@ mov eax,dword ptr [ebx]
 cmp eax,-999
 je next
   
-movss xmm0, dword ptr [ebx]
+
+ pusha
+ 
+ pusha
+
+ invoke GetSinAndCos,offset sin_angle_world,offset cos_angle_world,offset minus_sin_angle_world,dword ptr [ebx+8],dword ptr [ebx+12]
+ movss xmm0,cos_angle_world
+ movss xForm.eM11,xmm0
+ movss xmm0,sin_angle_world
+ movss xForm.eM12,xmm0
+ movss xmm0,minus_sin_angle_world
+ movss xForm.eM21,xmm0
+ movss xmm0,cos_angle_world
+ movss xForm.eM22,xmm0
+
+ mov eax,Bullet_Height/2
+ cvtsi2ss xmm4,eax
+ addss xmm4,dword ptr [ebx+4];was adss
+ 
+ ;xmm4 is y0
+ mov eax,Bullet_Width/2
+ cvtsi2ss xmm0,eax
+ addss xmm0,dword ptr [ebx];was adss
+ ;movss xmm0,ZeroPointZero
+ ;xmm0 is x0
+ movss xmm1,cos_angle_world
+ mulss xmm1,xmm0;xmm1=cos*x0
+ movss xmm2,sin_angle_world
+ mulss xmm2,xmm4;xmm2=sin*y0
+ movss xmm3,xmm0
+ subss xmm3,xmm1
+ addss xmm3,xmm2
+ movss xForm.ex,xmm3
+ movss xmm1,cos_angle_world
+ mulss xmm1,xmm4;xmm1=cos*y0
+ movss xmm2,sin_angle_world
+ mulss xmm2,xmm0;xmm2=sin*x0
+ movss xmm3,xmm4
+ subss xmm3,xmm1
+ subss xmm3,xmm2
+ movss xForm.ey,xmm3
+
+ 
+ 
+  movss xmm0, dword ptr [ebx]
 movss xmm1, dword ptr [ebx+4]
-addss xmm0,dword ptr [ebx+12]
+addss xmm0,dword ptr [ebx+12];VEL IN X
 movss dword ptr [ebx],xmm0
-addss xmm1, dword ptr [ebx+8]
+addss xmm1, dword ptr [ebx+8];VEL IN Y
 movss dword ptr [ebx+4],xmm1
  
 cvtss2si eax,xmm0
@@ -1927,13 +2010,19 @@ mov BulletY,eax
 mov rc.top,eax
 add eax,Bullet_Height
 mov rc.bottom,eax
- pusha
+
+ invoke SetWorldTransform,hdc,offset xForm;WORKS GREAT--------------------------------------------
  
- invoke Ellipse,hdc,rc.left,rc.top,rc.right,rc.bottom
-;invoke BUILDRECT,       BulletX,        BulletY,        Bullet_Width,Bullet_Height,hdc,brush
+ 
+ ;invoke Ellipse,hdc,rc.left,rc.top,rc.right,rc.bottom
+
+  invoke DrawImage_WithMask,hdc,ArrowBMP,ArrowBMPMask,BulletX,BulletY,1591,153,0,0,Bullet_Width,Bullet_Height,offset xForm
+ ;invoke DrawImage_WithMask,hdc,Rightz,RightzMask,BulletX,BulletY,30,40,0,0,Zombie_Width,Zombie_Height,offset xForm
+ invoke SetWorldTransform,hdc,offset normal_xForm;WORKS GREAT--------------------------------------------  
+ popa
+
 pusha
-;cmp host,FALSE
-;je continueon
+
 invoke Check_If_Bullet_Hit_And_Destroy_Zombie,BulletX,BulletY,Bullet_Width,Bullet_Height,offset zombies
 
 cmp eax,1
@@ -2105,12 +2194,11 @@ Draw_Sprint_Bar ENDP
  
            FPATAN
            FSINCOS
-           FMUL VEL
+		   FMUL VEL
            FSTP qword ptr [esi];VEL IN X
            CVTSD2SS xmm0,qword ptr [esi]
            movss dword ptr [ebx+12],xmm0
 		 
-           
            FMUL VEL
            FSTP qword ptr [esi];VEL IN Y
            CVTSD2SS xmm0,qword ptr [esi]
@@ -2235,6 +2323,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
                local hdcBuffer:HDC
 				local hbmBuffer:HBITMAP
 				local hOldBuffer:HBITMAP
+				local testrc:RECT
         cmp     message,        WM_PAINT
         je      painting
 		cmp message,	WM_RBUTTONDOWN
@@ -2416,6 +2505,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 					 invoke CreateThread, NULL, NULL, offset sendlocation,offset clientsin, NULL, NULL
 					 mov connected_to_friend, TRUE
 					 mov two_Players,TRUE
+					 mov STATUS,1
 					 ;invoke MessageBox, hWnd,offset connectedtopeer,offset connectedtopeer,MB_OK
 					.endif
 
@@ -2505,6 +2595,33 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 	   ret
 
        create:
+	   movss xmm0,cos_angle_world
+ movss xForm.eM11,xmm0
+ movss xmm0,sin_angle_world
+ movss xForm.eM12,xmm0
+ movss xmm0,minus_sin_angle_world
+ movss xForm.eM21,xmm0
+ movss xmm0,cos_angle_world
+ movss xForm.eM22,xmm0
+ movss xmm0,ZeroPointZero
+ movss xForm.ex,xmm0
+ movss xmm0,ZeroPointZero
+ movss xForm.ey,xmm0
+
+ movss xmm0,OnePointZero
+ movss normal_xForm.eM11,xmm0
+ movss xmm0,ZeroPointZero
+ movss normal_xForm.eM12,xmm0
+movss xmm0,ZeroPointZero
+ movss normal_xForm.eM21,xmm0
+movss xmm0,OnePointZero
+ movss normal_xForm.eM22,xmm0
+ movss xmm0,ZeroPointZero
+ movss normal_xForm.ex,xmm0
+ movss xmm0,ZeroPointZero
+ movss normal_xForm.ey,xmm0
+
+
 	   mov offsetToEndofArray,LengthofLeaf
 	   invoke CreateFont,56,50,180,90,FW_BOLD,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DECORATIVE,NULL
 	   mov MyFont,eax
@@ -2533,6 +2650,14 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 		invoke Get_Handle_To_Mask_Bitmap,	Online,	00ffffffh
 		mov OnlineMask,eax
 		
+		 invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,122
+		mov ArrowBMP,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	ArrowBMP,	00ffffffh
+		mov ArrowBMPMask,eax
+		
+
 		mov eax,hWalk
 		mov Player.CURRENTACTION,eax
 		mov eax,hWalkMask
@@ -2663,16 +2788,17 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
  
  
         painting:
-
+				
 		        invoke  BeginPaint,     hWnd,   addr paint
 				mov hdc, eax
+				invoke SetGraphicsMode,hdc,GM_ADVANCED
 				invoke CreateCompatibleDC,hdc
 				mov hdcBuffer,eax
 				invoke CreateCompatibleBitmap,hdc,WINDOW_WIDTH,WINDOW_HEIGHT
 				mov hbmBuffer,eax
 				invoke SelectObject,hdcBuffer,hbmBuffer
 				mov hOldBuffer,eax
-				
+				invoke SetGraphicsMode,hdcBuffer,GM_ADVANCED
 				invoke SetCursor,icursor
 				cmp STATUS,0
 				jne noStart
@@ -2718,15 +2844,92 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
                 fin:
 				
 				
+				;invoke SetWorldTransform,hdcBuffer,offset xForm;WORKS GREAT--------------------------------------------
+				;invoke SetWorldTransform,hdcBuffer,offset xForm
 				invoke DrawImage,hdcBuffer,zombiebr,0,0,0,0, 1504,910 ,WINDOW_WIDTH,WINDOW_HEIGHT
+				;invoke SetWorldTransform,hdcBuffer,offset normal_xForm;WORKS GREAT--------------------------------------------
 				invoke GetPlayerAngleAndFix,hWnd
+				
+ pusha
+ 
+ invoke SetWorldTransform,hdcBuffer,offset xForm;WORKS GREAT
+ invoke GetClientRect,hWnd,addr testrc
+ invoke DPtoLP,hdcBuffer,addr testrc,2
+ invoke GetStockObject,WHITE_BRUSH
+ invoke SelectObject,hdcBuffer,eax
+ mov eax,testrc.right
+ sub eax,100
+ mov ebx,testrc.bottom
+ add ebx,100
+ mov ecx,testrc.right
+ add ecx,100
+ mov edx,testrc.bottom
+ sub edx,100
+ invoke Ellipse,hdcBuffer,eax,ebx,ecx,edx
+
+ mov eax,testrc.right
+ sub eax,94
+ mov ebx,testrc.bottom
+ add ebx,94
+ mov ecx,testrc.right
+ add ecx,94
+ mov edx,testrc.bottom
+ sub edx,94
+ invoke Ellipse,hdcBuffer,eax,ebx,ecx,edx
+
+ mov eax,testrc.right
+ sub eax,13
+ mov ebx,testrc.bottom
+ add ebx,113
+ mov ecx,testrc.right
+ add ecx,13
+ mov edx,testrc.bottom
+ add edx,50
+ invoke Rectangle,hdcBuffer,eax,ebx,ecx,edx
+
+ mov eax,testrc.right
+ sub eax,13
+ mov ebx,testrc.bottom
+ add ebx,96
+ mov ecx,testrc.right
+ add ecx,13
+ mov edx,testrc.bottom
+ sub edx,50
+ invoke Rectangle,hdcBuffer,eax,ebx,ecx,edx
+
+ mov eax,testrc.bottom
+ sub eax,150
+ invoke MoveToEx,hdcBuffer,testrc.right,eax,NULL
+ mov eax,testrc.bottom
+ sub eax,16
+ invoke LineTo,hdcBuffer,testrc.right,eax
+
+ mov eax,testrc.bottom
+ sub eax,13
+ invoke MoveToEx,hdcBuffer,testrc.right,eax,NULL
+ mov eax,testrc.bottom
+ add eax,13
+ invoke LineTo,hdcBuffer,testrc.right,eax
+
+ 
+ mov eax,testrc.bottom
+ add eax,16
+ invoke MoveToEx,hdcBuffer,testrc.right,eax,NULL
+ mov eax,testrc.bottom
+ add eax,150
+ invoke LineTo,hdcBuffer,testrc.right,eax
+ invoke SetWorldTransform,hdcBuffer,offset normal_xForm;WORKS GREAT
+
+ popa
+
+
 				;DrawImage_WithMask PROC, hdc:HDC, img:HBITMAP, maskedimg:HBITMAP,  x:DWORD, y:DWORD,w:DWORD,h:DWORD,x2:DWORD,y2:DWORD,wstrech:DWORD,hstrech:DWORD
-				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player.x,Player.y,75,105,Player.CURRENTSTEP,Player.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT
+				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player.x,Player.y,75,105,Player.CURRENTSTEP,Player.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT,offset normal_xForm
 				;do cmp two players
 				;make a function that gets a code for an img and returns the hbitmap for that image #for drawing the second player in, you can't send hbitmaps because they are loaded differently in each run of the program
 				cmp two_Players,FALSE
 				je dontdrawplayer2
-				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player2.x,Player2.y,75,105,Player2.CURRENTSTEP,Player2.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT
+				invoke DrawImage_WithMask,hdcBuffer, Player.CURRENTACTION,  Player.CURRENTACTIONMASK,Player2.x,Player2.y,75,105,Player2.CURRENTSTEP,Player2.CURRENTFACING,RECT_WIDTH,RECT_HEIGHT,offset normal_xForm
 				dontdrawplayer2:
 				invoke DrawScore,hdcBuffer
 				invoke GetStockObject,  DC_BRUSH
@@ -2755,10 +2958,10 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
                 invoke SetDCBrushColor, hdcBuffer, 000000F0870Fh
                 mov brushcolouring,eax
                 
-                invoke bullet,hdcBuffer,brushcolouring,offset bullets
+                invoke bullet,hdcBuffer,brushcolouring,offset bullets,hWnd;MAYBE REMOVE
 				invoke SetDCBrushColor,hdcBuffer,0000000F87FFh
-				invoke bullet,hdcBuffer,brushcolouring,offset enemybullets
-               
+				invoke bullet,hdcBuffer,brushcolouring,offset enemybullets,hWnd;MAYBE REMVOE
+               invoke SetWorldTransform,hdcBuffer,offset normal_xForm
 			    
                
                 invoke GetStockObject,  DC_BRUSH
@@ -2788,13 +2991,19 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 		jne realend
 		cmp Player_Life,0       
 		jle endgame
+		cmp two_Players,FALSE
+		je needtocheck
 		cmp host,FALSE
 		je noneedtocheck
-		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player.x,Player.y
+		
+		
 		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player2.x,Player2.y
-		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player.x,Player.y,offset Player_Life
 		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player2.x,Player2.y,offset player2_health_to_add
+		needtocheck:
+		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player.x,Player.y
+		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player.x,Player.y,offset Player_Life
 		noneedtocheck:
+
 		invoke Check_If_Player_Hit_And_Remove_Life,Player.x,Player.y,RECT_WIDTH,RECT_HEIGHT
 		cmp Found,1
 		je endmovement
@@ -3108,8 +3317,11 @@ ZombieAdjusting:
 				
 				cmp STATUS,1
 				jne EndingTime
+				cmp two_Players,FALSE
+				je dontcheck_host1
 				cmp host,FALSE
 				je EndingTime
+				dontcheck_host1:
 				invoke adjustzombie
              
               jmp EndingTime
@@ -3122,8 +3334,11 @@ ZombieAdjusting:
 			
 				cmp STATUS,1
 				jne EndingTime
+				cmp two_Players,FALSE
+				je dontcheck_host2
 				cmp host,FALSE
 				je EndingTime
+				dontcheck_host2:
 				mov ecx,Number_To_Spawn
 				spawningloop:
 				push ecx

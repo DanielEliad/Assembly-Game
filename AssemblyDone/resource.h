@@ -19,3 +19,4 @@
 #define IDB_Walk 117
 #define IDB_Online 120
 #define IDB_Waiting 121
+#define IDB_Arrow 122
