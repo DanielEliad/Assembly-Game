@@ -78,7 +78,7 @@ Coin_Height	equ	30
 Coin_Width	equ	30
 Health_Pack_Width	equ	50
 Health_Pack_Height	equ	65
-ChanceToDropHealthPack	equ	7
+ChanceToDropHealthPack	equ	9
 Space_Between_Player_Width	equ 64
 Space_Between_Player_Height	equ	52
 LengthofLeaf equ 12
@@ -305,6 +305,10 @@ STATUS_INMECH BYTE 0
 VectorsP HBITMAP ?
 RotationP HBITMAP ?
 OnlineP HBITMAP ?
+rotatePT POINT<WINDOW_WIDTH-250,WINDOW_HEIGHT-150>
+rotate_xForm XFORM<>
+Adding_Angle REAL4 0.05
+Current_Angle REAL4 ?
 .code
 
  sendlocation PROC, paramter:DWORD
@@ -315,10 +319,7 @@ OnlineP HBITMAP ?
 	cmp send_what,0
 	jne nosendplayer
 
-	;cmp host,TRUE
-	;je no_need_to_debug_sending
-	;invoke MessageBox,0,offset sendingxy,offset sendingxy,MB_OK
-	;no_need_to_debug_sending:
+	
 
 	mov byte ptr [ebx],0
 	inc ebx
@@ -961,10 +962,176 @@ invoke WSAGetLastError
 ret
 connect_to_server ENDP
 
-MechanicsScreen PROC,hdc:HDC
+Draw_Rotating_Object PROC,hdc:HDC
+;--------------------------------------------------------------------------------
+local pt:POINT
+local cos_rotate:DWORD
+local sin_rotate:DWORD
+invoke GetAsyncKeyState,VK_LBUTTON
+shl eax,15
+cmp eax,0
+je endofdraw_rotating
+ mov esi, offset buffer
+invoke GetCursorPos,addr pt
+mov ecx,rotatePT.x;pt.x
+;sub ecx,WINPLACE.rcNormalPosition.left
+;sub ecx,rotatePT.x
+cvtsi2ss xmm0,ecx
+movss dword ptr [esi],xmm0
+
+mov edx,rotatePT.y;pt.y
+;sub edx,WINPLACE.rcNormalPosition.top
+;sub edx,rotatePT.y
+cvtsi2ss xmm0,edx
+movss dword ptr [esi+4],xmm0
+
+
+ ;FLD dword ptr [esi+4]
+
+;FLD dword ptr [esi]
+
+;FPATAN
+movss xmm0,Adding_Angle
+movss xmm1,Current_Angle
+addss xmm1,xmm0
+movss Current_Angle,xmm1
+endofdraw_rotating:
+ FLD Current_Angle
+;movss xmm6,Adding_Angle
+;addss xmm6,xmm6
+;movss Adding_Angle,xmm6
+FSINCOS;cos first sin after
+;mov edi,ADDR cos_rotate
+FSTP cos_rotate;cos
+;mov edi,ADDR sin_rotate
+FSTP sin_rotate;sin
+movss xmm0,sin_rotate
+mulss xmm0,Minus1;xmm0=minus sin
+
+movss xmm1,cos_rotate
+movss rotate_xForm.eM11,xmm1
+movss rotate_xForm.eM22,xmm1
+movss xmm1,sin_rotate
+movss rotate_xForm.eM12,xmm1
+movss rotate_xForm.eM21,xmm0
+
+mov eax,rotatePT.x
+;sub eax,WINPLACE.rcNormalPosition.left
+cvtsi2ss xmm0,eax
+
+mov eax,rotatePT.y
+;sub eax,WINPLACE.rcNormalPosition.top
+cvtsi2ss xmm4,eax
+
+movss xmm1,cos_rotate
+mulss xmm1,xmm0
+movss xmm2,sin_rotate
+mulss xmm2,xmm4
+movss xmm3,xmm0
+subss xmm3,xmm1
+addss xmm3,xmm2
+movss rotate_xForm.ex,xmm3
+
+movss xmm1,cos_rotate
+mulss xmm1,xmm4
+movss xmm2,sin_rotate
+mulss xmm2,xmm0
+movss xmm3,xmm4
+subss xmm3,xmm1
+subss xmm3,xmm2
+movss rotate_xForm.ey,xmm3
+
+invoke SetWorldTransform,hdc,offset rotate_xForm
+
+
+; invoke GetClientRect,hWnd,addr testrc
+; invoke DPtoLP,hdcBuffer,addr testrc,2
+
+ invoke GetStockObject,LTGRAY_BRUSH
+ invoke SelectObject,hdc,eax
+ 
+  
+ mov eax,rotatePT.x
+ sub eax,100
+ mov ebx,rotatePT.y
+ sub ebx,100
+ mov ecx,rotatePT.x
+ add ecx,100
+ mov edx,rotatePT.y
+ add edx,100
+ invoke Ellipse,hdc,eax,ebx,ecx,edx
+
+
+
+ mov eax,rotatePT.x
+ sub eax,94
+ mov ebx,rotatePT.y
+ sub ebx,94
+ mov ecx,rotatePT.x
+ add ecx,94
+ mov edx,rotatePT.y
+ add edx,94
+ invoke Ellipse,hdc,eax,ebx,ecx,edx
+
+ 
+ mov eax,rotatePT.x
+ sub eax,13
+ mov ebx,rotatePT.y
+ sub ebx,113
+ mov ecx,rotatePT.x
+ add ecx,13
+ mov edx,rotatePT.y
+ add edx,50
+ invoke Rectangle,hdc,eax,ebx,ecx,edx
+
+ mov eax,rotatePT.x
+ sub eax,13
+ mov ebx,rotatePT.y
+ sub ebx,96
+ mov ecx,rotatePT.x
+ add ecx,13
+ mov edx,rotatePT.y
+ add edx,50
+ invoke Rectangle,hdc,eax,ebx,ecx,edx
+
+ mov eax,rotatePT.x
+ sub eax,150
+ invoke MoveToEx,hdc,eax,rotatePT.y,NULL
+ mov eax,rotatePT.x
+ sub eax,16
+ invoke LineTo,hdc,eax,rotatePT.y
+
+ mov eax,rotatePT.x
+ sub eax,13
+ invoke MoveToEx,hdc,eax,rotatePT.y,NULL
+ mov eax,rotatePT.x
+ add eax,13
+ invoke LineTo,hdc,eax,rotatePT.y
+
+ 
+ mov eax,rotatePT.x
+ add eax,16
+ invoke MoveToEx,hdc,eax,rotatePT.y,NULL
+ mov eax,rotatePT.x
+ add eax,150
+ invoke LineTo,hdc,eax,rotatePT.y
+ invoke SetWorldTransform,hdc,offset normal_xForm;WORKS GREAT
+
+
+
+
+
+
+
+;================================================================================
+ret
+Draw_Rotating_Object ENDP
+
+MechanicsScreen PROC,hdc:HDC,hWnd:HWND
 ;--------------------------------------------------------------------------------
 cmp STATUS_INMECH,0
 jne nomain
+
 invoke DrawImage,hdc,MechanicsP,0,0,0,0,960,720,WINDOW_WIDTH,WINDOW_HEIGHT
 mov esi,Highlight
 imul esi,WINDOW_WIDTH/3
@@ -973,11 +1140,16 @@ invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,esi,WINDOW_HEIGHT/
 invoke DrawImage_WithMask,hdc,Vectors,VectorsMask,100,WINDOW_HEIGHT/2-100,810,179,0,0,WINDOW_WIDTH/8,WINDOW_HEIGHT/14
 invoke DrawImage_WithMask,hdc,Rotation,RotationMask,100+WINDOW_WIDTH/3,WINDOW_HEIGHT/2-100,773,156,0,0,WINDOW_WIDTH/8,WINDOW_HEIGHT/14
 invoke DrawImage_WithMask,hdc,OnlineF,OnlineFMask,100+WINDOW_WIDTH/3+WINDOW_WIDTH/3,WINDOW_HEIGHT/2-100,720,191,0,0,WINDOW_WIDTH/8,WINDOW_HEIGHT/14
-
 inc	FramesSinceLastClick
-cmp FramesSinceLastClick,5
+cmp FramesSinceLastClick,6
 jl finishbutton
 mov FramesSinceLastClick,0
+invoke GetAsyncKeyState,VK_ESCAPE
+shl eax,15
+cmp eax,0
+je dont_switch_to_start
+mov STATUS,0
+dont_switch_to_start:
 
 invoke GetAsyncKeyState,VK_RETURN
 shl eax,15
@@ -1024,6 +1196,10 @@ nomain:
 cmp STATUS_INMECH,1
 jne novectors
 invoke DrawImage,hdc,VectorsP,0,0,0,0,960,720,WINDOW_WIDTH,WINDOW_HEIGHT-20
+inc	FramesSinceLastClick
+cmp FramesSinceLastClick,6
+jl finishbutton
+mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
 shl eax,15
 cmp eax,0
@@ -1036,6 +1212,12 @@ novectors:
 cmp STATUS_INMECH,2
 jne norotation
 invoke DrawImage,hdc,RotationP,0,0,0,0,960,720,WINDOW_WIDTH,WINDOW_HEIGHT-20
+invoke GetWindowPlacement,hWnd,OFFSET WINPLACE
+invoke Draw_Rotating_Object,hdc
+inc	FramesSinceLastClick
+cmp FramesSinceLastClick,6
+jl finishbutton
+mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
 shl eax,15
 cmp eax,0
@@ -1055,6 +1237,10 @@ je noreturn3
 mov STATUS_INMECH,0
 noreturn3: 
 invoke DrawImage,hdc,OnlineP,0,0,0,0,960,720,WINDOW_WIDTH,WINDOW_HEIGHT-20
+inc	FramesSinceLastClick
+cmp FramesSinceLastClick,6
+jl finishbutton
+mov FramesSinceLastClick,0
 jmp finishbutton
 noOnline:
 finishbutton:
@@ -2335,8 +2521,8 @@ Draw_Sprint_Bar ENDP
            ;=====================DELTA X=================================
            mov ecx,pt.x
            sub ecx,ShootX
-           mov edx,WINPLACE.rcNormalPosition.left
-           sub ecx,edx
+          
+           sub ecx,WINPLACE.rcNormalPosition.left
            sub ecx,40
            cvtsi2ss xmm2,ecx
            movss dword ptr [esi],xmm2
@@ -2344,8 +2530,8 @@ Draw_Sprint_Bar ENDP
            ;=====================DELTA Y=================================
            mov eax,pt.y
            sub eax,ShootY
-           mov edx,WINPLACE.rcNormalPosition.top
-           sub eax,edx
+           
+           sub eax,WINPLACE.rcNormalPosition.top
            sub eax,40
            cvtsi2ss xmm3,eax
            movss dword ptr [esi+8],xmm3
@@ -3060,7 +3246,7 @@ movss xmm0,OnePointZero
 
 				cmp STATUS,5
 				jne noMechanicsScreen
-				invoke MechanicsScreen,hdcBuffer
+				invoke MechanicsScreen,hdcBuffer,hWnd
 				jmp endingofpainting
 				noMechanicsScreen:
                 cmp RECT_WIDTH,RECT_WIDTH_BACKUP
@@ -3088,77 +3274,7 @@ movss xmm0,OnePointZero
 				;invoke SetWorldTransform,hdcBuffer;WORKS GREAT--------------------------------------------
 				invoke GetPlayerAngleAndFix,hWnd
 				
- pusha
- 
- invoke SetWorldTransform,hdcBuffer,offset xForm;WORKS GREAT
- invoke GetClientRect,hWnd,addr testrc
- invoke DPtoLP,hdcBuffer,addr testrc,2
- invoke GetStockObject,WHITE_BRUSH
- invoke SelectObject,hdcBuffer,eax
- mov eax,WINDOW_WIDTH/2
- sub eax,100
- mov ebx,WINDOW_HEIGHT/2
- add ebx,100
- mov ecx,WINDOW_WIDTH/2
- add ecx,100
- mov edx,WINDOW_HEIGHT/2
- sub edx,100
- invoke Ellipse,hdcBuffer,eax,ebx,ecx,edx
 
- mov eax,WINDOW_WIDTH/2
- sub eax,94
- mov ebx,WINDOW_HEIGHT/2
- add ebx,94
- mov ecx,WINDOW_WIDTH/2
- add ecx,94
- mov edx,WINDOW_HEIGHT/2
- sub edx,94
- invoke Ellipse,hdcBuffer,eax,ebx,ecx,edx
-
- mov eax,WINDOW_WIDTH/2
- sub eax,13
- mov ebx,WINDOW_HEIGHT/2
- add ebx,113
- mov ecx,WINDOW_WIDTH/2
- add ecx,13
- mov edx,WINDOW_HEIGHT/2
- add edx,50
- invoke Rectangle,hdcBuffer,eax,ebx,ecx,edx
-
- mov eax,WINDOW_WIDTH/2
- sub eax,13
- mov ebx,WINDOW_HEIGHT/2
- add ebx,96
- mov ecx,WINDOW_WIDTH/2
- add ecx,13
- mov edx,WINDOW_HEIGHT/2
- sub edx,50
- invoke Rectangle,hdcBuffer,eax,ebx,ecx,edx
-
- mov eax,WINDOW_HEIGHT/2
- sub eax,150
- invoke MoveToEx,hdcBuffer,WINDOW_WIDTH/2,eax,NULL
- mov eax,WINDOW_HEIGHT/2
- sub eax,16
- invoke LineTo,hdcBuffer,WINDOW_WIDTH/2,eax
-
- mov eax,WINDOW_HEIGHT/2
- sub eax,13
- invoke MoveToEx,hdcBuffer,WINDOW_WIDTH/2,eax,NULL
- mov eax,WINDOW_HEIGHT/2
- add eax,13
- invoke LineTo,hdcBuffer,WINDOW_WIDTH/2,eax
-
- 
- mov eax,WINDOW_HEIGHT/2
- add eax,16
- invoke MoveToEx,hdcBuffer,WINDOW_WIDTH/2,eax,NULL
- mov eax,WINDOW_HEIGHT/2
- add eax,150
- invoke LineTo,hdcBuffer,WINDOW_WIDTH/2,eax
- invoke SetWorldTransform,hdcBuffer,offset normal_xForm;WORKS GREAT
-
- popa
 
 
 				;DrawImage_WithMask PROC, hdc:HDC, img:HBITMAP, maskedimg:HBITMAP,  x:DWORD, y:DWORD,w:DWORD,h:DWORD,x2:DWORD,y2:DWORD,wstrech:DWORD,hstrech:DWORD
