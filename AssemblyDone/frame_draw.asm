@@ -697,7 +697,49 @@ CloseProcess	PROC
 ret
 CloseProcess ENDP
 
+DrawImage_fast PROC, hdc:HDC, img:HBITMAP, x:DWORD, y:DWORD,x2:DWORD,y2:DWORD,w:DWORD,h:DWORD
 
+local hdcMem:HDC
+local HOld:HBITMAP
+  invoke CreateCompatibleDC, hdc
+  mov hdcMem, eax
+  invoke SelectObject, hdcMem, img
+  mov HOld, eax
+  ;invoke SetStretchBltMode,hdc,COLORONCOLOR
+  invoke BitBlt,hdc,x,y,w,h,hdcMem,x2,y2,SRCCOPY
+  invoke SelectObject,hdcMem,HOld
+  invoke DeleteDC,hdcMem 
+  invoke DeleteObject,HOld
+
+
+ret
+DrawImage_fast ENDP
+
+
+DrawImage_fast_WithMask PROC, hdc:HDC, img:HBITMAP,maskedimg:HBITMAP, x:DWORD, y:DWORD,x2:DWORD,y2:DWORD,w:DWORD,h:DWORD
+local hdcMem:HDC
+local HOld:HDC
+  invoke CreateCompatibleDC, hdc
+  mov hdcMem, eax
+  ;invoke SetGraphicsMode,hdcMem,GM_ADVANCED
+  ; mov edi,lp_xForm
+  ;invoke SetWorldTransform,hdcMem,edi
+  invoke SelectObject, hdcMem, maskedimg
+  mov HOld,eax
+   
+  
+  invoke BitBlt,hdc,x,y,w,h,hdcMem,x2,y2,SRCAND
+		
+  invoke SelectObject, hdcMem, img
+  invoke BitBlt ,hdc,x,y,w,h,hdcMem,x2,y2,SRCPAINT
+
+  invoke SelectObject,hdcMem,HOld
+  invoke DeleteObject,HOld
+
+        invoke DeleteDC,hdcMem 
+
+ret
+DrawImage_fast_WithMask ENDP
 DrawImage PROC, hdc:HDC, img:HBITMAP, x:DWORD, y:DWORD,x2:DWORD,y2:DWORD,w:DWORD,h:DWORD,wstrech:DWORD,hstrech:DWORD
 ;--------------------------------------------------------------------------------
 local hdcMem:HDC
@@ -1904,7 +1946,7 @@ deadb:
 mov dword ptr [ebx],-999
 next:
 popa
-add ebx,16
+add ebx,40
 dec ecx
 jnz loopingbull;loop loopingbull
 ;================================================================================
@@ -1954,44 +1996,32 @@ je next
  
  pusha
 
- invoke GetSinAndCos,offset sin_angle_world,offset cos_angle_world,offset minus_sin_angle_world,dword ptr [ebx+8],dword ptr [ebx+12]
- movss xmm0,cos_angle_world
- movss xForm.eM11,xmm0
- movss xmm0,sin_angle_world
- movss xForm.eM12,xmm0
- movss xmm0,minus_sin_angle_world
- movss xForm.eM21,xmm0
- movss xmm0,cos_angle_world
- movss xForm.eM22,xmm0
-
- mov eax,Bullet_Height/2
+  mov eax,Bullet_Height/2
  cvtsi2ss xmm4,eax
  addss xmm4,dword ptr [ebx+4];was adss
- 
- ;xmm4 is y0
+
+  ;xmm4 is y0
  mov eax,Bullet_Width/2
  cvtsi2ss xmm0,eax
  addss xmm0,dword ptr [ebx];was adss
  ;movss xmm0,ZeroPointZero
  ;xmm0 is x0
- movss xmm1,cos_angle_world
+ movss xmm1,dword ptr [ebx+16]
  mulss xmm1,xmm0;xmm1=cos*x0
- movss xmm2,sin_angle_world
+ movss xmm2,dword ptr [ebx+20]
  mulss xmm2,xmm4;xmm2=sin*y0
  movss xmm3,xmm0
  subss xmm3,xmm1
  addss xmm3,xmm2
- movss xForm.ex,xmm3
- movss xmm1,cos_angle_world
+ movss dword ptr [ebx+32],xmm3
+ movss xmm1,dword ptr [ebx+16]
  mulss xmm1,xmm4;xmm1=cos*y0
- movss xmm2,sin_angle_world
+ movss xmm2,dword ptr [ebx+20]
  mulss xmm2,xmm0;xmm2=sin*x0
  movss xmm3,xmm4
  subss xmm3,xmm1
  subss xmm3,xmm2
- movss xForm.ey,xmm3
-
- 
+ movss dword ptr [ebx+36],xmm3
  
   movss xmm0, dword ptr [ebx]
 movss xmm1, dword ptr [ebx+4]
@@ -2010,13 +2040,15 @@ mov BulletY,eax
 mov rc.top,eax
 add eax,Bullet_Height
 mov rc.bottom,eax
-
- invoke SetWorldTransform,hdc,offset xForm;WORKS GREAT--------------------------------------------
+mov eax,ebx
+add eax,16
+ invoke SetWorldTransform,hdc,eax;WORKS GREAT--------------------------------------------
  
  
  ;invoke Ellipse,hdc,rc.left,rc.top,rc.right,rc.bottom
-
-  invoke DrawImage_WithMask,hdc,ArrowBMP,ArrowBMPMask,BulletX,BulletY,1591,153,0,0,Bullet_Width,Bullet_Height,offset xForm
+ invoke DrawImage_fast_WithMask,hdc,ArrowBMP,ArrowBMPMask,BulletX,BulletY,0,0,60,18
+ ;invoke DrawImage,hdc,ArrowBMP,BulletX,BulletY,0,0,1591,153,Bullet_Width,Bullet_Height
+  ;invoke DrawImage_WithMask,hdc,ArrowBMP,ArrowBMPMask,BulletX,BulletY,1591,153,0,0,Bullet_Width,Bullet_Height,offset xForm
  ;invoke DrawImage_WithMask,hdc,Rightz,RightzMask,BulletX,BulletY,30,40,0,0,Zombie_Width,Zombie_Height,offset xForm
  invoke SetWorldTransform,hdc,offset normal_xForm;WORKS GREAT--------------------------------------------  
  popa
@@ -2039,7 +2071,7 @@ deadb:
 mov dword ptr [ebx],-999
 next:
 popa
-add ebx,16
+add ebx,40
 dec ecx
 jnz loopingbull;loop loopingbull
 ;================================================================================
@@ -2211,7 +2243,21 @@ Draw_Sprint_Bar ENDP
            cvtsi2ss xmm1,ShootY
            movss dword ptr [ebx+4],xmm1
 
+		   
+ invoke GetSinAndCos,offset sin_angle_world,offset cos_angle_world,offset minus_sin_angle_world,dword ptr [ebx+8],dword ptr [ebx+12]
+ movss xmm0,cos_angle_world
+ movss dword ptr [ebx+16],xmm0
+ movss xmm0,sin_angle_world
+ movss dword ptr [ebx+20],xmm0
+ movss xmm0,minus_sin_angle_world
+ movss dword ptr [ebx+24],xmm0
+ movss xmm0,cos_angle_world
+ movss dword ptr [ebx+28],xmm0
 
+
+ 
+
+ 
 		   
 	;invoke waveOutSetVolume, NULL , volume;	Special Thanks To Tal Bortman
     ;invoke PlaySound, offset SoundPath, NULL,SND_ASYNC;	Special Thanks To Tal Bortman
@@ -3290,7 +3336,7 @@ timing:
 		   invoke createbullet
 		   jmp EndingTime
 		   nexting:
-		   add ebx,16
+		   add ebx,40
 		   loop loopingcheckingempty
          endnexting:
        
