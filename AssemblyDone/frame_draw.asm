@@ -1141,7 +1141,7 @@ invoke DrawImage_WithMask,hdc,Vectors,VectorsMask,100,WINDOW_HEIGHT/2-100,810,17
 invoke DrawImage_WithMask,hdc,Rotation,RotationMask,100+WINDOW_WIDTH/3,WINDOW_HEIGHT/2-100,773,156,0,0,WINDOW_WIDTH/8,WINDOW_HEIGHT/14
 invoke DrawImage_WithMask,hdc,OnlineF,OnlineFMask,100+WINDOW_WIDTH/3+WINDOW_WIDTH/3,WINDOW_HEIGHT/2-100,720,191,0,0,WINDOW_WIDTH/8,WINDOW_HEIGHT/14
 inc	FramesSinceLastClick
-cmp FramesSinceLastClick,6
+cmp FramesSinceLastClick,7
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
@@ -1899,8 +1899,6 @@ ret
 AdvanceZombie_and_CheckIfDead ENDP
 
 BITMAP_ID_TO_HBITMAP	PROC,id:DWORD
-mov eax,Frontz
-mov edx,FrontzMask
 
 cmp id,113
 jne notIDB_Front
@@ -1915,7 +1913,7 @@ mov edx,RightzMask
 notIDB_Right:
 
 cmp id,115
-je notIDB_Left
+jne notIDB_Left
 mov eax,Leftz
 mov edx,LeftzMask
 notIDB_Left:
