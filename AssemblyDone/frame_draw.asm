@@ -309,7 +309,205 @@ rotatePT POINT<WINDOW_WIDTH-250,WINDOW_HEIGHT-150>
 rotate_xForm XFORM<>
 Adding_Angle REAL4 0.05
 Current_Angle REAL4 ?
+DistanceMap dword (WINDOW_WIDTH*WINDOW_HEIGHT) dup(-1)
 .code
+
+
+getValue PROC, x:DWORD, y:DWORD
+;----------------------------------------------------------------------------
+ cmp x, 0
+ jl obstacle
+ cmp y, 0
+ jl obstacle
+ cmp x, WINDOW_WIDTH-1
+ jg obstacle
+ cmp y, WINDOW_HEIGHT-1
+ jg obstacle
+ xor edx, edx
+ mov ebx, offset DistanceMap
+ mov eax, y
+ mov ecx, WINDOW_WIDTH
+ mul ecx
+ add eax,x
+ add ebx, eax
+ xor eax, eax
+ mov eax, dword ptr[ebx]
+ jmp endofgetValue
+obstacle:
+ mov eax, -2
+ endofgetValue:
+ ret
+;============================================================================
+getValue ENDP
+
+
+setValue PROC, x:DWORD, y:DWORD,d:DWORD
+
+mov ebx,offset DistanceMap
+mov eax,y
+mov ecx,WINDOW_WIDTH
+xor edx,edx
+imul ecx
+add eax,x
+add ebx,eax
+mov eax,d
+mov dword ptr [ebx],eax
+
+mov eax,TRUE
+
+ret
+setValue ENDP
+
+
+mark PROC,x:dword,y:dword,d:DWORD
+;----------------------------------------------------------------------------
+checkup:
+ mov eax,y
+ dec eax
+ invoke getValue,x,eax
+ cmp eax,-2
+ je checkright
+setup:
+ cmp eax,-1
+ jne comparingup
+ mov eax,y
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,x,eax,ebx
+ jmp checkright
+comparingup:
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge checkright
+ mov eax,y
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,x,eax,ebx
+
+checkright:
+ mov eax,x
+ inc eax
+ invoke getValue,eax,y
+ cmp eax,-2
+ je checkdown
+setright:
+ cmp eax,-1
+ jne comparingright
+ mov eax,x
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,eax,y,ebx
+ jmp checkdown
+comparingright:
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge checkdown
+ mov eax,x
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,eax,y,ebx
+
+checkdown:
+ mov eax,y
+ inc eax
+ invoke getValue,x,eax
+ cmp eax,-2
+ je checkleft
+setdown:
+ cmp eax,-1
+ jne comparingdown
+ mov eax,y
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,x,eax,ebx
+ jmp checkleft
+comparingdown:
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge checkleft
+ mov eax,y
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,x,eax,ebx
+
+checkleft:
+ mov eax,x
+ dec eax
+ invoke getValue,eax,y
+ cmp eax,-2
+ jne returntolast
+setleft:
+ cmp eax,-1
+ jne comparingleft
+ mov eax,x
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,eax,y,ebx
+ jmp returntolast
+comparingleft:
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge returntolast
+ mov eax,x
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke mark,eax,y,ebx
+returntolast:
+ ret
+;============================================================================
+mark ENDP
 
  sendlocation PROC, paramter:DWORD
 	local send_what:BYTE
@@ -3850,7 +4048,7 @@ invoke RegisterClassA, addr wndcls ;Register the class
 invoke CreateWindowExA, WS_EX_COMPOSITED, addr ClassName, addr windowTitle, WS_SYSMENU, 100, 100, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0, 0 ;Create the window
 mov hWnd, eax ;Save the handle
 invoke ShowWindow, eax, SW_SHOW ;Show it
-
+invoke mark,200,200,0
 
 invoke SetTimer, hWnd, MAIN_TIMER_ID, 20, NULL ;Set the repaint timer
 invoke SetTimer, hWnd, ShootingTime, 208, NULL ;Set the shooting time
