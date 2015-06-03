@@ -324,11 +324,12 @@ getValue PROC, x:DWORD, y:DWORD
  cmp y, WINDOW_HEIGHT-1
  jg obstacle
  xor edx, edx
- mov ebx, offset DistanceMap
+ 
  mov eax, y
  mov ecx, WINDOW_WIDTH
  mul ecx
  add eax,x
+ mov ebx, offset DistanceMap
  add ebx, eax
  xor eax, eax
  mov eax, dword ptr[ebx]
@@ -342,21 +343,24 @@ getValue ENDP
 
 
 setValue PROC, x:DWORD, y:DWORD,d:DWORD
+;----------------------------------------------------------------------------
 
-mov ebx,offset DistanceMap
 mov eax,y
 mov ecx,WINDOW_WIDTH
 xor edx,edx
 imul ecx
 add eax,x
+mov ebx,offset DistanceMap
 add ebx,eax
 mov eax,d
 mov dword ptr [ebx],eax
 
 mov eax,TRUE
-
+;============================================================================
 ret
 setValue ENDP
+
+
 
 
 mark PROC,x:dword,y:dword,d:DWORD
@@ -474,7 +478,7 @@ checkleft:
  dec eax
  invoke getValue,eax,y
  cmp eax,-2
- jne returntolast
+ je returntolast
 setleft:
  cmp eax,-1
  jne comparingleft
@@ -837,6 +841,205 @@ endofremoveMax:
 ;================================================================================
 ret
 removeMax ENDP
+
+real_mark PROC
+;----------------------------------------------------------------------------
+local pt:POINT
+local d:DWORD
+
+invoke removeMax,addr pt
+invoke getValue,pt.x,pt.y
+ mov d,eax
+
+
+
+
+
+checkup:
+ mov eax,pt.y
+ dec eax
+ invoke getValue,pt.x,eax
+ cmp eax,-2
+ je checkright
+setup:
+ cmp eax,-1
+ jne comparingup
+ 
+
+ mov eax,pt.y
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,pt.x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,pt.x,eax,ebx
+ jmp checkright
+
+comparingup:
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge checkright
+ mov eax,pt.y
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,pt.x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,pt.x,eax,ebx
+
+
+
+
+
+checkright:
+ mov eax,pt.x
+ inc eax
+ invoke getValue,eax,pt.y
+ cmp eax,-2
+ je checkdown
+setright:
+ cmp eax,-1
+ jne comparingright
+
+  mov eax,pt.x
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,pt.y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,eax,pt.y,ebx
+ jmp checkdown
+
+comparingright:
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge checkdown
+ mov eax,pt.x
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,pt.y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,eax,pt.y,ebx
+
+
+
+
+checkdown:
+ mov eax,pt.y
+ inc eax
+ invoke getValue,pt.x,eax
+ cmp eax,-2
+ je checkleft
+setdown:
+ cmp eax,-1
+ jne comparingdown
+
+ mov eax,pt.y
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,pt.x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,pt.x,eax,ebx
+ jmp checkleft
+comparingdown:
+
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge checkleft
+ mov eax,pt.y
+ inc eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,pt.x,eax,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,pt.x,eax,ebx
+
+
+
+
+checkleft:
+ mov eax,pt.x
+ dec eax
+ invoke getValue,eax,pt.y
+ cmp eax,-2
+ je returntolast
+setleft:
+ cmp eax,-1
+ jne comparingleft
+ mov eax,pt.x
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,pt.y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,eax,pt.y,ebx
+ jmp returntolast
+comparingleft:
+
+ mov ebx,d
+ inc ebx
+ cmp eax,ebx
+ jge returntolast
+ mov eax,pt.x
+ dec eax
+ mov ebx,d
+ inc ebx
+ push eax
+ push ebx
+ invoke setValue,eax,pt.y,ebx;d+1
+ pop ebx
+ pop eax
+ invoke insertPriority,eax,pt.y,ebx
+returntolast:
+
+;============================================================================
+ret
+real_mark ENDP
+
+
+
+my_mark PROC,x:DWORD,y:DWORD,d:DWORD
+;----------------------------------------------------------------------------
+
+	invoke insertPriority,x,y,d
+	invoke setValue,x,y,d
+	again:
+	cmp offsetToEndofArray,LengthofLeaf+1;maybe remove
+	jle end_loop
+	invoke real_mark
+	jmp again
+	end_loop:
+
+;============================================================================
+ret
+my_mark ENDP
+
 
 BUILDRECT       PROC,   x:DWORD,        y:DWORD, h:DWORD,       w:DWORD,        hdc:HDC,        brush:HBRUSH
 ;--------------------------------------------------------------------------------
@@ -4048,7 +4251,7 @@ invoke RegisterClassA, addr wndcls ;Register the class
 invoke CreateWindowExA, WS_EX_COMPOSITED, addr ClassName, addr windowTitle, WS_SYSMENU, 100, 100, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0, 0 ;Create the window
 mov hWnd, eax ;Save the handle
 invoke ShowWindow, eax, SW_SHOW ;Show it
-invoke mark,200,200,0
+invoke my_mark,200,200,0
 
 invoke SetTimer, hWnd, MAIN_TIMER_ID, 20, NULL ;Set the repaint timer
 invoke SetTimer, hWnd, ShootingTime, 208, NULL ;Set the shooting time
