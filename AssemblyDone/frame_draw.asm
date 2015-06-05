@@ -310,6 +310,14 @@ rotate_xForm XFORM<>
 Adding_Angle REAL4 0.05
 Current_Angle REAL4 ?
 DistanceMap dword (WINDOW_WIDTH*WINDOW_HEIGHT) dup(-1)
+Volume HBITMAP ?
+VolumeMask HBITMAP ?
+VolumeBar HBITMAP ?
+VolumeBarMask HBITMAP ?
+Circle HBITMAP ?
+CircleMask HBITMAP ?
+CircleX dword 50+100
+playbk db "play bakcgroundmusic.mp3",0
 .code
 
 
@@ -1212,7 +1220,18 @@ invoke DrawImage,hdc,WaitingScreenBMP,0,0,0,0,1024,1024,WINDOW_WIDTH,WINDOW_HEIG
 
 invoke DrawImage_WithMask,hdc,Rightz,RightzMask,Waiting_zomb_x,Waiting_zomb_y,30,40,Waiting_cut_x,0,Zombie_Width*5,Zombie_Height*5
 invoke DrawImage_WithMask,hdc,hWalk,hWalkMask,Waiting_player_x,Waiting_player_y,75,105,Waiting_player_cut_x,385,Zombie_Width*5,Zombie_Height*5
+inc FramesSinceLastClick
+cmp FramesSinceLastClick,6
+jl finish
+invoke GetAsyncKeyState,VK_ESCAPE
 
+cmp eax,0
+je finish
+mov STATUS,0
+mov FramesSinceLastClick,0
+invoke closesocket, sock
+invoke WSACleanup 
+finish:
 ;---------------------------ZOMBIE---------------------------------
 invoke GetTickCount
 cmp Time_Step_Should_End,eax
@@ -1272,16 +1291,49 @@ WaitingScreen ENDP
 
 DrawOptionScreenButtons PROC,hdc:HDC,Highlighted:DWORD
 ;--------------------------------------------------------------------------------
-
+	invoke DrawImage_WithMask,hdc,Volume,VolumeMask,200,200,933,244,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/7
+	invoke DrawImage_WithMask,hdc,VolumeBar,VolumeBarMask,50,275,910,52,0,0,(WINDOW_WIDTH*4)/5,WINDOW_HEIGHT/8
+	invoke DrawImage_WithMask,hdc,Circle,CircleMask,CircleX,275,630,642,0,0,WINDOW_WIDTH/8,WINDOW_HEIGHT/8
 ;================================================================================
 ret
 DrawOptionScreenButtons ENDP
 
 OptionsScreen PROC,hdc:HDC
 ;--------------------------------------------------------------------------------
-invoke DrawImage,hdc,OptionScreenhbitmap,0,0,0,0,1920,1040,WINDOW_WIDTH,WINDOW_HEIGHT
+invoke DrawImage,hdc,OptionScreenhbitmap,0,0,0,0,960,720,WINDOW_WIDTH,WINDOW_HEIGHT
 
-;invoke DrawOptionScreenButtons,hdc,Highlight
+invoke DrawOptionScreenButtons,hdc,Highlight
+
+inc FramesSinceLastClick
+cmp FramesSinceLastClick,6
+jl finish
+invoke GetAsyncKeyState,VK_ESCAPE
+
+cmp eax,0
+je next
+mov FramesSinceLastClick,0
+mov STATUS,0
+mov Highlight,0
+next:
+invoke GetAsyncKeyState,VK_RIGHT
+cmp eax,0
+je next2
+add CircleX,30
+next2:
+invoke GetAsyncKeyState,VK_LEFT
+cmp eax,0
+je finish
+sub CircleX,30
+
+finish:
+cmp CircleX,50
+jg no_reset
+mov CircleX,50
+no_reset:
+cmp CircleX,((WINDOW_WIDTH*4)/5)-50
+jl no_reset2
+mov CircleX,((WINDOW_WIDTH*4)/5)-50
+no_reset2:
 ;================================================================================
 ret
 OptionsScreen ENDP
@@ -1369,7 +1421,7 @@ local pt:POINT
 local cos_rotate:DWORD
 local sin_rotate:DWORD
 invoke GetAsyncKeyState,VK_LBUTTON
-shl eax,15
+
 cmp eax,0
 je endofdraw_rotating
  mov esi, offset buffer
@@ -1546,14 +1598,14 @@ cmp FramesSinceLastClick,7
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
-shl eax,15
+
 cmp eax,0
 je dont_switch_to_start
 mov STATUS,0
 dont_switch_to_start:
 
 invoke GetAsyncKeyState,VK_RETURN
-shl eax,15
+
 cmp eax,0
 je iright
 cmp Highlight,0
@@ -1573,7 +1625,7 @@ jmp finishbutton
 
 iright: 
 invoke GetAsyncKeyState,VK_RIGHT
-shl eax,15
+
 cmp eax,0
 je ileft
 inc Highlight
@@ -1584,7 +1636,7 @@ nevermind:
 jmp finishbutton
 ileft:
 invoke GetAsyncKeyState,VK_LEFT
-shl eax,15
+
 cmp eax,0
 je finishbutton
 dec Highlight
@@ -1602,7 +1654,7 @@ cmp FramesSinceLastClick,6
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
-shl eax,15
+
 cmp eax,0
 je noreturn1
 mov STATUS_INMECH,0
@@ -1620,7 +1672,7 @@ cmp FramesSinceLastClick,6
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
-shl eax,15
+
 cmp eax,0
 je noreturn2
 mov STATUS_INMECH,0
@@ -1632,7 +1684,7 @@ cmp STATUS_INMECH,3
 jne noOnline
 
 invoke GetAsyncKeyState,VK_ESCAPE
-shl eax,15
+
 cmp eax,0
 je noreturn3
 mov STATUS_INMECH,0
@@ -1661,6 +1713,7 @@ cmp FramesSinceLastClick,5
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_RETURN
+
 cmp eax,0
 je idown
 cmp Highlight,0
@@ -1698,6 +1751,7 @@ jmp finishbutton
 
 idown: 
 invoke GetAsyncKeyState,VK_DOWN
+
 cmp eax,0
 je iup
 inc Highlight
@@ -1708,6 +1762,7 @@ nevermind:
 jmp finishbutton
 iup:
 invoke GetAsyncKeyState,VK_UP
+
 cmp eax,0
 je finishbutton
 dec Highlight
@@ -3179,13 +3234,14 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 						cmp host,TRUE
 						je dont_recieve_player2_life_and_score
 						
-						add ebx,4
+					
 						mov eax,[ebx]
 						mov scoreNum,eax
-						
 						add ebx,4
+						
 						mov eax,dword ptr [ebx]
 						add Player_Life,eax
+						add ebx,4
 						dont_recieve_player2_life_and_score:
 						jmp endofrecieve
 						
@@ -3473,6 +3529,30 @@ movss xmm0,OnePointZero
 		mov VectorsMask,eax
 
 		 invoke GetModuleHandle,NULL
+        invoke LoadBitmap,eax,131
+        mov Volume,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	Volume,	00ffffffh
+		mov VolumeMask,eax
+
+
+		 invoke GetModuleHandle,NULL
+        invoke LoadBitmap,eax,132
+        mov VolumeBar,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	VolumeBar,	00ffffffh
+		mov VolumeBarMask,eax
+
+
+			 invoke GetModuleHandle,NULL
+        invoke LoadBitmap,eax,133
+        mov Circle,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	Circle,	00ffffffh
+		mov CircleMask,eax
+
+
+		 invoke GetModuleHandle,NULL
         invoke LoadBitmap,eax,124
         mov Rotation,eax
 
@@ -3597,7 +3677,7 @@ movss xmm0,OnePointZero
 
         invoke LoadCursor,NULL,IDC_CROSS
         mov icursor,eax
-			
+		invoke 	mciSendString,NULL,0,NULL,offset playbk
 	   ret
        
         closing:
@@ -3612,7 +3692,20 @@ movss xmm0,OnePointZero
  
  
         painting:
-				
+				mov eax,CircleX
+				sub eax,50
+				cvtsi2ss xmm0,eax
+				mov eax,((WINDOW_WIDTH*4)/5)-50
+				cvtsi2ss xmm1,eax
+				divss xmm0,xmm1
+				mov eax,0ffh
+				cvtsi2ss xmm1,eax
+				mulss xmm0,xmm1
+				cvtss2si eax,xmm0
+				mov edi,offset volume
+				mov word ptr [edi],ax
+				mov word ptr [edi+2],ax
+				invoke waveOutSetVolume,NULL,volume
 		        invoke  BeginPaint,     hWnd,   addr paint
 				mov hdc, eax
 				invoke SetGraphicsMode,hdc,GM_ADVANCED
@@ -3770,9 +3863,11 @@ movss xmm0,OnePointZero
 		
 	
         invoke GetAsyncKeyState,41h;A Key
+		
         cmp eax, 0
         jne moveleft
         invoke GetAsyncKeyState,44h;D Key
+		
         cmp eax, 0
         jne moveright
         jumpingcheck:
@@ -3781,13 +3876,16 @@ movss xmm0,OnePointZero
         cmp jmpingDown, 1
         je jmpDown
         invoke GetAsyncKeyState, VK_SPACE
+		
         cmp eax, 0
         jne startjmp
         checkupdown:
         invoke GetAsyncKeyState, 57h ;W Key
+		
         cmp eax, 0
         jne moveup
         invoke GetAsyncKeyState, 53h;S Key
+		
         cmp eax, 0
         jne movedown
        
@@ -3830,7 +3928,8 @@ stopJmping:
    
 moveleft:
 		
-      				invoke GetAsyncKeyState,VK_LSHIFT;A Key
+        invoke GetAsyncKeyState,VK_LSHIFT;A Key
+	    
 		cmp eax,0
         je noSprint
 		mov Player.speed,8
@@ -3864,7 +3963,8 @@ moveleft:
 		DontChangeToNext1:
         jmp jumpingcheck
 moveright:
-						invoke GetAsyncKeyState,VK_LSHIFT;A Key
+        invoke GetAsyncKeyState,VK_LSHIFT;A Key
+		
 		cmp eax,0
         je noSprint1
 		mov Player.speed,8
@@ -3903,7 +4003,8 @@ movedown:
         je endmovement
         cmp jmpingDown, 1
         je endmovement
-					invoke GetAsyncKeyState,VK_LSHIFT;A Key
+		invoke GetAsyncKeyState,VK_LSHIFT;A Key
+		
 		cmp eax,0
         je noSprint2
 		mov Player.speed,8
@@ -3941,7 +4042,8 @@ moveup:
         je endmovement
         cmp jmpingDown, 1
         je endmovement
-					invoke GetAsyncKeyState,VK_LSHIFT;A Key
+		invoke GetAsyncKeyState,VK_LSHIFT;A Key
+		
 		cmp eax,0
         je noSprint3
 		mov Player.speed,8
@@ -4033,7 +4135,8 @@ timing:
 				cmp STATUS,1
 				jne EndingTime
 
-                invoke GetAsyncKeyState, VK_LBUTTON
+            invoke GetAsyncKeyState, VK_LBUTTON
+			
             cmp eax,0
             je EndingTime
 			invoke GetWindowPlacement,hWnd,OFFSET WINPLACE

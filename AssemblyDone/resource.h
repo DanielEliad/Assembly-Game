@@ -28,3 +28,6 @@
 #define IDB_VectorsP 128
 #define IDB_RotationP 129
 #define IDB_OnlineP 130
+#define IDB_Volume 131
+#define IDB_VolumeBar 132
+#define IDB_Circle 133
