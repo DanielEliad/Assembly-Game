@@ -1842,7 +1842,7 @@ je next
 found:
 popa;------------------------------------------
 inc dword ptr [ebx+16]
-cmp dword ptr [ebx+16],3
+cmp dword ptr [ebx+16],2
 jl noaddscore
 add scoreNum,50
 noaddscore:
@@ -2114,8 +2114,11 @@ cmp dword ptr [ebx],-999
 je NoCoin
 pop ecx
 push ecx
+cmp two_Players,FALSE
+je dont_check
 cmp host,FALSE
 je ContinueDrawingCoins
+dont_check:
 invoke GetTickCount
 cmp dword ptr [ebx+8],eax
 jg ContinueDrawingCoins
@@ -2648,8 +2651,11 @@ mov rc.bottom,eax
 
 ;invoke BUILDRECT,       BulletX,        BulletY,        Bullet_Width,Bullet_Height,hdc,brush
 pusha
+cmp two_Players,FALSE
+je dont_check
 cmp host,FALSE
 je continueon
+dont_check:
 invoke Check_If_Bullet_Hit_And_Destroy_Zombie,BulletX,BulletY,Bullet_Width,Bullet_Height,offset zombies
 
 cmp eax,1
@@ -4251,7 +4257,6 @@ invoke RegisterClassA, addr wndcls ;Register the class
 invoke CreateWindowExA, WS_EX_COMPOSITED, addr ClassName, addr windowTitle, WS_SYSMENU, 100, 100, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0, 0 ;Create the window
 mov hWnd, eax ;Save the handle
 invoke ShowWindow, eax, SW_SHOW ;Show it
-invoke my_mark,200,200,0
 
 invoke SetTimer, hWnd, MAIN_TIMER_ID, 20, NULL ;Set the repaint timer
 invoke SetTimer, hWnd, ShootingTime, 208, NULL ;Set the shooting time
