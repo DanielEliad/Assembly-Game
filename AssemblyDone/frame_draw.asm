@@ -317,7 +317,7 @@ VolumeBarMask HBITMAP ?
 Circle HBITMAP ?
 CircleMask HBITMAP ?
 CircleX dword 50+100
-playbk db "play bakcgroundmusic.mp3",0
+playbk db "play backgroundmusic.mp3",0
 .code
 
 
@@ -1231,6 +1231,7 @@ mov STATUS,0
 mov FramesSinceLastClick,0
 invoke closesocket, sock
 invoke WSACleanup 
+invoke GetAsyncKeyState,VK_RETURN
 finish:
 ;---------------------------ZOMBIE---------------------------------
 invoke GetTickCount
@@ -1314,17 +1315,17 @@ je next
 mov FramesSinceLastClick,0
 mov STATUS,0
 mov Highlight,0
+invoke GetAsyncKeyState,VK_RETURN
 next:
 invoke GetAsyncKeyState,VK_RIGHT
 cmp eax,0
 je next2
-add CircleX,30
+add CircleX,10
 next2:
 invoke GetAsyncKeyState,VK_LEFT
 cmp eax,0
 je finish
-sub CircleX,30
-
+sub CircleX,10
 finish:
 cmp CircleX,50
 jg no_reset
@@ -1602,6 +1603,7 @@ invoke GetAsyncKeyState,VK_ESCAPE
 cmp eax,0
 je dont_switch_to_start
 mov STATUS,0
+invoke GetAsyncKeyState,VK_RETURN
 dont_switch_to_start:
 
 invoke GetAsyncKeyState,VK_RETURN
@@ -1713,7 +1715,6 @@ cmp FramesSinceLastClick,5
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_RETURN
-
 cmp eax,0
 je idown
 cmp Highlight,0
@@ -3677,7 +3678,7 @@ movss xmm0,OnePointZero
 
         invoke LoadCursor,NULL,IDC_CROSS
         mov icursor,eax
-		invoke 	mciSendString,NULL,0,NULL,offset playbk
+		
 	   ret
        
         closing:
@@ -3695,17 +3696,18 @@ movss xmm0,OnePointZero
 				mov eax,CircleX
 				sub eax,50
 				cvtsi2ss xmm0,eax
-				mov eax,((WINDOW_WIDTH*4)/5)-50
+				mov eax,((WINDOW_WIDTH*4)/5)-50-50
 				cvtsi2ss xmm1,eax
-				divss xmm0,xmm1
-				mov eax,0ffh
-				cvtsi2ss xmm1,eax
+				mov eax,0ffffh
+				cvtsi2ss xmm2,eax
+				divss xmm2,xmm1
 				mulss xmm0,xmm1
 				cvtss2si eax,xmm0
 				mov edi,offset volume
 				mov word ptr [edi],ax
 				mov word ptr [edi+2],ax
 				invoke waveOutSetVolume,NULL,volume
+				invoke 	mciSendString,offset playbk,NULL,0,NULL
 		        invoke  BeginPaint,     hWnd,   addr paint
 				mov hdc, eax
 				invoke SetGraphicsMode,hdc,GM_ADVANCED
