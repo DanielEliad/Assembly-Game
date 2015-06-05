@@ -3693,16 +3693,16 @@ movss xmm0,OnePointZero
  
  
         painting:
-				mov eax,CircleX
-				sub eax,50
-				cvtsi2ss xmm0,eax
-				mov eax,((WINDOW_WIDTH*4)/5)-50-50
-				cvtsi2ss xmm1,eax
-				mov eax,0ffffh
-				cvtsi2ss xmm2,eax
-				divss xmm2,xmm1
-				mulss xmm0,xmm1
-				cvtss2si eax,xmm0
+				xor eax,eax
+				mov ax,0ffffh
+				xor ebx,ebx
+				mov bx,((WINDOW_WIDTH*4)/5)-50+50
+				xor edx,edx
+				idiv bx
+				mov ebx,CircleX
+				sub ebx,50
+				xor edx,edx
+				imul bx
 				mov edi,offset volume
 				mov word ptr [edi],ax
 				mov word ptr [edi+2],ax

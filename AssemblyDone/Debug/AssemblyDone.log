@@ -1,8 +1,8 @@
-﻿Build started 05/06/2015 23:42:24.
-     1>Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Build target(s)).
+﻿Build started 06/06/2015 00:52:54.
+     1>Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Rebuild target(s)).
      1>_MASM:
          Assembling frame_draw.asm...
-         cmd.exe /C "C:\Users\Daniel\AppData\Local\Temp\tmp2b6a7150a85544dd9d3dfdeb0334e644.cmd"
+         cmd.exe /C "C:\Users\Daniel\AppData\Local\Temp\tmpca33efaa47c1441eb2c057be802c6f0f.cmd"
          ml.exe /c /nologo /Zi /Fo"Debug\frame_draw.obj" /W3 /errorReport:prompt  /Taframe_draw.asm
      1>frame_draw.asm(4385): warning A6001: no return from procedure
      1>frame_draw.asm(670): warning A6004: procedure argument or local not referenced : paramter
@@ -27,12 +27,14 @@
      1>frame_draw.asm(4345): warning A6004: procedure argument or local not referenced : bm
      1>frame_draw.asm(4345): warning A6004: procedure argument or local not referenced : rectforpic
      1>frame_draw.asm(4385): warning A6004: procedure argument or local not referenced : animcls
+       ResourceCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"Debug\resource.res" resource.rc 
        Link:
          F:\Visual Studio\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.lib" /MACHINE:X86 Debug\resource.res
          Debug\frame_draw.obj
          AssemblyDone.vcxproj -> C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.exe
-     1>Done Building Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" (Build target(s)).
+     1>Done Building Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" (Rebuild target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:25.96
+Time Elapsed 00:00:26.38
