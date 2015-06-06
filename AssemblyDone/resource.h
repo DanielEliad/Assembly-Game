@@ -31,3 +31,12 @@
 #define IDB_Volume 131
 #define IDB_VolumeBar 132
 #define IDB_Circle 133
+#define IDB_PauseScreen 134
+#define IDB_Resume 135
+#define IDB_OptionsPaused 136
+#define IDB_MainMenu 137
+#define IDB_YouLost 138
+#define IDB_NewGameDead 139
+#define IDB_25hp 140
+#define IDB_75hp 141
+#define IDB_150hp 142

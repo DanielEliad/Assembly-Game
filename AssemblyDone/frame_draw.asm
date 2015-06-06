@@ -47,6 +47,15 @@ includelib \masm32\lib\Ws2_32.lib
  6. Make new shop background and to be able to actually buy guns with different attributes
  7. ".	.	."
 
+
+
+
+ IMPORTANT:
+ Shorten Zombies
+ Shorten Bullets
+ Make Online Not Laggy
+ Make SAVESTATUS To know what to go back to
+ Make Store Good
  @
 .const
 WM_SOCKET equ WM_USER+100
@@ -177,7 +186,7 @@ buffer2 DWORD 3 dup(0)
  ;volumebite	DWORD 5fff5fffh
  Time_Between_Steps	DWORD	500;In Milliseconds
  Store	DWORD	0
- TimeTillRoundEnds	DWORD	120000
+ TimeTillRoundEnds	DWORD	10000;120000
  cost	HBITMAP	?
  costMasked	HBITMAP	?
  StoreBK	HBITMAP	?
@@ -188,7 +197,7 @@ buffer2 DWORD 3 dup(0)
  scoreBuffer	BYTE	100 dup(0)
  timeBuffer BYTE	100	dup(0)
  doubledot BYTE	":"
- realtimetillend	DWORD	120
+ realtimetillend	DWORD	10;120
  AnimClassName	BYTE	"ANIMATE_CLASS",0
  AnimWindowName	BYTE	"theAnimWinName",0
  angle DWORD 2 dup(?)
@@ -318,7 +327,75 @@ Circle HBITMAP ?
 CircleMask HBITMAP ?
 CircleX dword 50+100
 playbk db "play backgroundmusic.mp3",0
+Paused HBITMAP ?
+Resume HBITMAP ?
+ResumeMask HBITMAP ?
+OptionsPaused HBITMAP ?
+OptionsPausedMask HBITMAP ?
+MainMenu HBITMAP ?
+MainMenuMask HBITMAP ?
+SAVESTATUS BYTE ?
+YouLost HBITMAP ?
+NewGameDead HBITMAP ?
+NewGameDeadMask HBITMAP ?
+h25hp HBITMAP ?
+h25hpMask HBITMAP ?
+h75hp HBITMAP ?
+h75hpMask HBITMAP ?
+h150hp HBITMAP ?
+h150hpMask HBITMAP ?
+
 .code
+
+Restart PROC,hWnd:HWND
+
+mov ebx,offset zombies
+mov ecx,50
+loopingzombies:
+mov dword ptr [ebx],-999
+add ebx,36
+loop loopingzombies
+
+mov ebx,offset bullets
+mov ecx,48
+loopingbullets:
+mov dword ptr [ebx],-999
+add ebx,40
+loop loopingbullets
+
+
+mov ebx,offset enemybullets
+mov ecx,48
+loopingbullets2:
+mov dword ptr [ebx],-999
+add ebx,40
+loop loopingbullets2
+
+mov ebx,offset coins
+mov ecx,50
+loopingcoins:
+mov dword ptr [ebx],-999
+add ebx,12
+loop loopingcoins
+
+mov ebx,offset Packs
+mov ecx,10
+loopingpacks:
+mov dword ptr [ebx],-999
+add ebx,16
+loop loopingpacks
+
+mov Player.x,200
+mov Player_Life,500
+invoke SetTimer, hWnd, RoundEnded, TimeTillRoundEnds, NULL ;Set the time til the store
+mov eax,TimeTillRoundEnds
+mov ecx,1000
+xor edx,edx
+idiv ecx
+mov realtimetillend,eax
+mov scoreNum,0
+ret
+Restart ENDP
 
 
 getValue PROC, x:DWORD, y:DWORD
@@ -1313,7 +1390,8 @@ invoke GetAsyncKeyState,VK_ESCAPE
 cmp eax,0
 je next
 mov FramesSinceLastClick,0
-mov STATUS,0
+mov al,SAVESTATUS
+mov STATUS,al
 mov Highlight,0
 invoke GetAsyncKeyState,VK_RETURN
 next:
@@ -1335,6 +1413,20 @@ cmp CircleX,((WINDOW_WIDTH*4)/5)-50
 jl no_reset2
 mov CircleX,((WINDOW_WIDTH*4)/5)-50
 no_reset2:
+xor eax,eax
+mov ax,0ffffh
+xor ebx,ebx
+mov bx,((WINDOW_WIDTH*4)/5)-50+50
+xor edx,edx
+idiv bx
+mov ebx,CircleX
+sub ebx,50
+xor edx,edx
+imul bx
+mov edi,offset volume
+mov word ptr [edi],ax
+mov word ptr [edi+2],ax
+invoke waveOutSetVolume,NULL,volume
 ;================================================================================
 ret
 OptionsScreen ENDP
@@ -1703,7 +1795,159 @@ finishbutton:
 ret
 MechanicsScreen ENDP
 
+YouLostScreen PROC,hdc:HDC,hWnd:HWND
+;--------------------------------------------------------------------------------
+invoke DrawImage,hdc,YouLost,0,0,0,0,960,720,WINDOW_WIDTH,WINDOW_HEIGHT
 
+mov eax,Highlight
+mov esi,WINDOW_HEIGHT/5+20
+xor edx,edx
+imul esi
+add eax,200
+invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,350,eax,240,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/5
+
+invoke DrawImage_WithMask,hdc,NewGameDead,NewGameDeadMask,350,200,782,194,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/5
+invoke DrawImage_WithMask,hdc,MainMenu,MainMenuMask,350,200+((WINDOW_HEIGHT/5)+20),861,138,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/5
+
+inc FramesSinceLastClick
+cmp FramesSinceLastClick,5
+jl finish
+
+invoke GetAsyncKeyState,VK_RETURN
+cmp eax,0
+je next
+
+mov FramesSinceLastClick,0
+
+cmp Highlight,0
+jne notrestart
+mov SAVESTATUS,7
+invoke Restart,hWnd
+mov STATUS,1
+jmp finish
+notrestart:
+
+cmp Highlight,1
+jne notmainmenu
+invoke KillTimer,hWnd,RoundEnded
+mov STATUS,0
+jmp finish
+notmainmenu:
+
+
+next:
+invoke GetAsyncKeyState,VK_DOWN
+cmp eax,0
+je next2
+
+mov FramesSinceLastClick,0
+
+inc Highlight
+cmp Highlight,1
+jng nevermind
+mov Highlight,0
+nevermind:
+
+
+next2:
+invoke GetAsyncKeyState,VK_UP
+cmp eax,0
+je finish
+
+mov FramesSinceLastClick,0
+
+dec Highlight
+cmp Highlight,0
+jnl nevermind2
+mov Highlight,1
+nevermind2:
+
+finish:
+;================================================================================
+ret
+
+;================================================================================
+ret
+YouLostScreen ENDP
+
+
+PauseScreen PROC,hdc:HDC,hWnd:HWND
+;--------------------------------------------------------------------------------
+invoke DrawImage,hdc,Paused,0,0,0,0,960,720,WINDOW_WIDTH,WINDOW_HEIGHT
+mov eax,Highlight
+mov esi,WINDOW_HEIGHT/5+20
+xor edx,edx
+imul esi
+add eax,200
+invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,350,eax,240,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/5
+
+invoke DrawImage_WithMask,hdc,Resume,ResumeMask,350,200,782,194,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/5
+invoke DrawImage_WithMask,hdc,OptionsPaused,OptionsPausedMask,350,200+WINDOW_HEIGHT/5+20,717,169,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/5
+invoke DrawImage_WithMask,hdc,MainMenu,MainMenuMask,350,200+((2*(WINDOW_HEIGHT/5)+20)),861,138,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/5
+
+inc FramesSinceLastClick
+cmp FramesSinceLastClick,5
+jl finish
+
+invoke GetAsyncKeyState,VK_RETURN
+cmp eax,0
+je next
+
+mov FramesSinceLastClick,0
+
+cmp Highlight,0
+jne notresume
+mov SAVESTATUS,6
+mov STATUS,1
+jmp finish
+notresume:
+
+cmp Highlight,1
+jne notoptions
+mov SAVESTATUS,6
+mov STATUS,3
+jmp finish
+notoptions:
+
+cmp Highlight,2
+jne notmainmenu
+invoke KillTimer,hWnd,RoundEnded
+mov STATUS,0
+jmp finish
+notmainmenu:
+
+
+next:
+invoke GetAsyncKeyState,VK_DOWN
+cmp eax,0
+je next2
+
+mov FramesSinceLastClick,0
+
+inc Highlight
+cmp Highlight,2
+jng nevermind
+mov Highlight,0
+nevermind:
+
+
+next2:
+invoke GetAsyncKeyState,VK_UP
+cmp eax,0
+je finish
+
+mov FramesSinceLastClick,0
+
+dec Highlight
+cmp Highlight,0
+jnl nevermind2
+mov Highlight,2
+nevermind2:
+
+finish:
+;================================================================================
+ret
+PauseScreen ENDP
 
 
 StartScreen PROC,hdc:HDC,hWnd:HWND
@@ -1719,8 +1963,8 @@ cmp eax,0
 je idown
 cmp Highlight,0
 jne next
+invoke Restart,hWnd
 mov STATUS,1
-invoke SetTimer, hWnd, RoundEnded, TimeTillRoundEnds, NULL ;Set the time til the store
 jmp finishbutton
 next:
 cmp Highlight,1
@@ -1735,6 +1979,7 @@ jmp finishbutton
 next2:
 cmp Highlight,2
 jne next3
+mov SAVESTATUS,0
 mov STATUS,3
 mov Highlight,0
 jmp finishbutton
@@ -1775,19 +2020,20 @@ finishbutton:
 ret
 StartScreen ENDP
 
-DrawStoreStands	PROC,hdc:HDC
-;--------------------------------------------------------------------------------
-invoke DrawImage_WithMask,hdc,cost,costMasked,760,400,182,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/7
-invoke DrawImage_WithMask,hdc,cost,costMasked,760,600,182,60,0,0,WINDOW_WIDTH/4,WINDOW_HEIGHT/7
-
-;================================================================================
-ret
-DrawStoreStands	ENDP
 
 DrawStore	PROC,hdc:HDC
 ;--------------------------------------------------------------------------------
-invoke DrawImage,hdc,StoreBK,0,0,0,0,1504,910,WINDOW_WIDTH,WINDOW_HEIGHT
-invoke DrawStoreStands,hdc
+invoke DrawImage,hdc,StoreBK,0,0,0,0,960,720,WINDOW_WIDTH-15,WINDOW_HEIGHT-40
+mov eax,Highlight
+mov esi,WINDOW_WIDTH/3+20
+xor edx,edx
+imul esi
+add eax,50
+invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,eax,300,240,60,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
+
+invoke DrawImage_WithMask,hdc,h25hp,h25hpMask,50,300,565,116,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
+invoke DrawImage_WithMask,hdc,h75hp,h75hpMask,50+WINDOW_WIDTH/3+20,300,567,86,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
+invoke DrawImage_WithMask,hdc,h150hp,h150hpMask,50+WINDOW_WIDTH/3+20+WINDOW_WIDTH/3+20,300,655,86,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
 ;================================================================================
 ret
 DrawStore	ENDP
@@ -1977,7 +2223,7 @@ add eax,h
 mov rect.bottom,eax
  
 mov ebx,offset zombies
-mov ecx,80
+mov ecx,50
  
 searchingforhits:
 pusha;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2065,6 +2311,10 @@ je next
 found:
 popa;------------------------------------------
 dec Player_Life
+cmp Player_Life,0
+jge noreset
+mov Player_Life,0
+noreset:
 mov FoundForSound,1
 mov Found,1
 pusha
@@ -3676,6 +3926,65 @@ movss xmm0,OnePointZero
 				invoke Get_Handle_To_Mask_Bitmap,	Backz,	00ffffffh
 		mov BackzMask,eax
 
+		 invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,134
+		mov Paused,eax
+		
+		 invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,135
+		mov Resume,eax
+		invoke Get_Handle_To_Mask_Bitmap,	Resume,	00ffffffh
+		mov ResumeMask,eax
+
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,136
+		mov OptionsPaused,eax
+		invoke Get_Handle_To_Mask_Bitmap,	OptionsPaused,	00ffffffh
+		mov OptionsPausedMask,eax
+
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,137
+		mov MainMenu,eax
+		invoke Get_Handle_To_Mask_Bitmap,	MainMenu,	00ffffffh
+		mov MainMenuMask,eax
+
+
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,138
+		mov YouLost,eax
+
+
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,139
+		mov NewGameDead,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	NewGameDead,	00ffffffh
+		mov NewGameDeadMask,eax
+
+		
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,140
+		mov h25hp,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	h25hp,	00ffffffh
+		mov h25hpMask,eax
+
+		
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,141
+		mov h75hp,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	h75hp,	00ffffffh
+		mov h75hpMask,eax
+		
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,142
+		mov h150hp,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	h150hp,	00ffffffh
+		mov h150hpMask,eax
+		
+						
         invoke LoadCursor,NULL,IDC_CROSS
         mov icursor,eax
 		
@@ -3693,20 +4002,7 @@ movss xmm0,OnePointZero
  
  
         painting:
-				xor eax,eax
-				mov ax,0ffffh
-				xor ebx,ebx
-				mov bx,((WINDOW_WIDTH*4)/5)-50+50
-				xor edx,edx
-				idiv bx
-				mov ebx,CircleX
-				sub ebx,50
-				xor edx,edx
-				imul bx
-				mov edi,offset volume
-				mov word ptr [edi],ax
-				mov word ptr [edi+2],ax
-				invoke waveOutSetVolume,NULL,volume
+				
 				invoke 	mciSendString,offset playbk,NULL,0,NULL
 		        invoke  BeginPaint,     hWnd,   addr paint
 				mov hdc, eax
@@ -3749,6 +4045,26 @@ movss xmm0,OnePointZero
 				invoke MechanicsScreen,hdcBuffer,hWnd
 				jmp endingofpainting
 				noMechanicsScreen:
+
+				cmp STATUS,6
+				jne noPauseScreen
+				invoke PauseScreen,hdcBuffer,hWnd
+				jmp endingofpainting
+				noPauseScreen:
+
+
+				cmp STATUS,7
+				jne nodeath
+				invoke YouLostScreen,hdcBuffer,hWnd
+				jmp endingofpainting
+				nodeath:
+				invoke GetAsyncKeyState,VK_ESCAPE
+				shr eax,15
+				cmp eax,0
+				je no_move_to_pause
+				mov SAVESTATUS,1
+				mov STATUS,6
+				no_move_to_pause:
                 cmp RECT_WIDTH,RECT_WIDTH_BACKUP
                 je iflat
                 mov eax,RECT_HEIGHT_BACKUP/2
@@ -4207,7 +4523,7 @@ ZombieAdjusting:
 				spawningloop:
 				push ecx
                  mov ebx,offset zombies
-				 mov ecx,80
+				 mov ecx,50
                loopcheckingifemptyz:
 			   mov eax,dword ptr [ebx]
 			   cmp eax,-999
@@ -4340,8 +4656,8 @@ OtherInstances:
 	invoke sendto,sock, offset you_are_host, 1024, 0, offset clientsin, sizeof clientsin
 	mov connected_to_friend,FALSE
 	nosend_host:
-	invoke MessageBox, hWnd,offset deadmsg,offset deadcaption,MB_OK
-	invoke CloseProcess
+	mov STATUS,7
+	ret
 ProjectWndProc  ENDP
  
 main PROC
