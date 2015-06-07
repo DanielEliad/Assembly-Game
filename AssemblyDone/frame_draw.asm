@@ -358,8 +358,9 @@ limit_for_spawning_time DWORD 300 ;in milliseconds
 limit_amount_of_zombies_to_spawn DWORD 1
 NextWave HBITMAP ?
 NextWaveMask HBITMAP ?
-TOP_VELZ REAL4 5.4
+TOP_VELZ REAL4 7.0
 MoneyToAdd DWORD 0
+wave BYTE 0
 .code
 
 Restart PROC,hWnd:HWND
@@ -403,7 +404,7 @@ loop loopingpacks
 mov Player.x,200
 mov Player.y,400
 mov Player_Life,500
-mov TimeTillRoundEnds,120000
+mov TimeTillRoundEnds,60000
 invoke SetTimer, hWnd, RoundEnded, TimeTillRoundEnds, NULL ;Set the time til the store
 mov eax,TimeTillRoundEnds
 mov ecx,1000
@@ -415,12 +416,13 @@ mov Money,0
 movss xmm0,BACKUPVELZ
 movss VELZ,xmm0
 mov Time_Between_Steps,500
-mov limit_for_spawning_time,600
-mov amountofzombiesneeded,20
+mov limit_for_spawning_time,500
+mov amountofzombiesneeded,25
 mov limit_amount_of_zombies_to_spawn,1
 mov Zombie_Spawning_Time,1000
 mov Number_To_Spawn,1
 mov deadzcount,0
+mov sprintmeter,500
 ret
 Restart ENDP
 
@@ -430,6 +432,7 @@ Restart ENDP
 
 NextWaveP PROC,hWnd:HWND
 
+inc wave
 mov ebx,offset zombies
 mov ecx,50
 loopingzombies:
@@ -485,10 +488,17 @@ cmp amountofzombiesneeded,0
 jg noreset
 mov amountofzombiesneeded,1
 noreset:
+cmp wave,3
+jng noinc
 inc limit_amount_of_zombies_to_spawn
+noinc:
 mov Zombie_Spawning_Time,1000
 mov Number_To_Spawn,1
 mov deadzcount,0
+mov sprintmeter,500
+movss xmm0,TOP_VELZ
+addss xmm0,ADDINGZ
+movss TOP_VELZ,xmm0
 ret
 NextWaveP ENDP
 
@@ -1537,30 +1547,30 @@ mov esi,WINDOW_HEIGHT/5
 mov eax,Highlighted
 imul eax,WINDOW_HEIGHT/6-30
 add esi,eax
-invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,(WINDOW_WIDTH*3)/4,esi,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,550,esi,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 mov edx,WINDOW_HEIGHT/5
 
 push edx
-invoke DrawImage_WithMask,hdc,NewGame,NewGameMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,NewGame,NewGameMasked,550,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 pop edx
 add edx,WINDOW_HEIGHT/6-30
 
 push edx
-invoke DrawImage_WithMask,hdc,Online,OnlineMask,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,Online,OnlineMask,550,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 pop edx
 add edx,WINDOW_HEIGHT/6-30
 
 push edx
-invoke DrawImage_WithMask,hdc,Options,OptionsMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,Options,OptionsMasked,550,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 pop edx
 add edx,WINDOW_HEIGHT/6-30
 
 push edx
-invoke DrawImage_WithMask,hdc,MechanicsS,MechanicsSMask,(WINDOW_WIDTH*3)/4,edx,960,185,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,MechanicsS,MechanicsSMask,550,edx,960,185,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 pop edx
 add edx,WINDOW_HEIGHT/6-30
 
-invoke DrawImage_WithMask,hdc,Exiting,ExitingMasked,(WINDOW_WIDTH*3)/4,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
+invoke DrawImage_WithMask,hdc,Exiting,ExitingMasked,550,edx,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/10
 
 
 
@@ -1791,6 +1801,7 @@ cmp FramesSinceLastClick,7
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
+
 cmp eax,0
 je dont_switch_to_start
 mov STATUS,0
@@ -2052,7 +2063,7 @@ PauseScreen ENDP
 StartScreen PROC,hdc:HDC,hWnd:HWND
 ;--------------------------------------------------------------------------------
 inc	FramesSinceLastClick
-invoke DrawImage,hdc,StartScreenBK,0,0,0,0,1000,605,WINDOW_WIDTH,WINDOW_HEIGHT
+invoke DrawImage,hdc,StartScreenBK,0,0,0,0,960,720,WINDOW_WIDTH-15,WINDOW_HEIGHT-40
 invoke DrawStartScreenButtons,hdc,Highlight
 cmp FramesSinceLastClick,5
 jl finishbutton
@@ -2086,6 +2097,7 @@ next3:
 cmp Highlight,3
 jne next4
 mov STATUS,5
+invoke GetAsyncKeyState,VK_ESCAPE
 mov Highlight,0
 jmp finishbutton
 next4:
@@ -4916,7 +4928,7 @@ OtherInstances:
 	nosend_host:
 	invoke KillTimer,hWnd,RoundEnded
 	mov STATUS,7
-
+	mov Highlight,0
 	ret
 ProjectWndProc  ENDP
  

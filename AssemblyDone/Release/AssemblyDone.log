@@ -1,35 +1,41 @@
-﻿Build started 5/19/2015 2:10:03 PM.
-     1>Project "C:\Users\user\Desktop\AssemblyDone\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Build target(s)).
+﻿Build started 07/06/2015 22:43:06.
+     1>Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Rebuild target(s)).
      1>_MASM:
          Assembling frame_draw.asm...
-         cmd.exe /C "C:\Users\user\AppData\Local\Temp\tmpa4f313ece191467e82f748cbbc8fb802.cmd"
+         cmd.exe /C "C:\Users\Daniel\AppData\Local\Temp\tmp7720ad9e298c4b2ba69dd85b0c6f5153.cmd"
          ml.exe /c /nologo /Zi /Fo"Release\frame_draw.obj" /W3 /errorReport:prompt  /Taframe_draw.asm
-     1>frame_draw.asm(2369): warning A6001: no return from procedure
-     1>frame_draw.asm(308): error A2101: cannot add two relocatable labels
-     1>frame_draw.asm(309): error A2101: cannot add two relocatable labels
-     1>frame_draw.asm(310): error A2101: cannot add two relocatable labels
-     1>frame_draw.asm(338): warning A6004: procedure argument or local not referenced : returnvaluex
-     1>frame_draw.asm(338): warning A6004: procedure argument or local not referenced : returnvaluey
-     1>frame_draw.asm(392): warning A6004: procedure argument or local not referenced : hold
-     1>frame_draw.asm(392): warning A6004: procedure argument or local not referenced : hold2
-     1>frame_draw.asm(456): warning A6004: procedure argument or local not referenced : hdc
-     1>frame_draw.asm(456): warning A6004: procedure argument or local not referenced : Highlighted
-     1>frame_draw.asm(595): warning A6004: procedure argument or local not referenced : radix
-     1>frame_draw.asm(973): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(973): warning A6004: procedure argument or local not referenced : hdcMem1
-     1>frame_draw.asm(973): warning A6004: procedure argument or local not referenced : hOld
-     1>frame_draw.asm(1060): warning A6004: procedure argument or local not referenced : hdcMem
-     1>frame_draw.asm(1136): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(1327): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : brushcolouring2
-     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : hdcMem
-     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : hbmOld
-     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : bm
-     1>frame_draw.asm(2313): warning A6004: procedure argument or local not referenced : rectforpic
-     1>frame_draw.asm(2369): warning A6004: procedure argument or local not referenced : animcls
-     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\BuildCustomizations\masm.targets(50,5): error MSB3721: The command "ml.exe /c /nologo /Zi /Fo"Release\frame_draw.obj" /W3 /errorReport:prompt  /Taframe_draw.asm" exited with code 1.
-     1>Done Building Project "C:\Users\user\Desktop\AssemblyDone\AssemblyDone\AssemblyDone.vcxproj" (Build target(s)) -- FAILED.
+     1>frame_draw.asm(4973): warning A6001: no return from procedure
+     1>frame_draw.asm(857): warning A6004: procedure argument or local not referenced : paramter
+     1>frame_draw.asm(928): warning A6004: procedure argument or local not referenced : tempto
+     1>frame_draw.asm(928): warning A6004: procedure argument or local not referenced : tempfrom
+     1>frame_draw.asm(1291): warning A6004: procedure argument or local not referenced : hold
+     1>frame_draw.asm(1291): warning A6004: procedure argument or local not referenced : hold2
+     1>frame_draw.asm(1487): warning A6004: procedure argument or local not referenced : Highlighted
+     1>frame_draw.asm(2169): warning A6004: procedure argument or local not referenced : radix
+     1>frame_draw.asm(2728): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(2728): warning A6004: procedure argument or local not referenced : hdcMem1
+     1>frame_draw.asm(2728): warning A6004: procedure argument or local not referenced : hOld
+     1>frame_draw.asm(2815): warning A6004: procedure argument or local not referenced : hdcMem
+     1>frame_draw.asm(2939): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(3208): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(3332): warning A6004: procedure argument or local not referenced : brush
+     1>frame_draw.asm(3332): warning A6004: procedure argument or local not referenced : hWnd
+     1>frame_draw.asm(3332): warning A6004: procedure argument or local not referenced : testrc
+     1>frame_draw.asm(4933): warning A6004: procedure argument or local not referenced : brushcolouring2
+     1>frame_draw.asm(4933): warning A6004: procedure argument or local not referenced : hdcMem
+     1>frame_draw.asm(4933): warning A6004: procedure argument or local not referenced : hbmOld
+     1>frame_draw.asm(4933): warning A6004: procedure argument or local not referenced : bm
+     1>frame_draw.asm(4933): warning A6004: procedure argument or local not referenced : rectforpic
+     1>frame_draw.asm(4973): warning A6004: procedure argument or local not referenced : animcls
+       ResourceCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"Release\resource.res" resource.rc 
+       Link:
+         F:\Visual Studio\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Project_for_show\Assembly-Game\Release\AssemblyDone.exe" /INCREMENTAL:NO /NOLOGO /LTCG:STATUS kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Project_for_show\Assembly-Game\Release\AssemblyDone.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Project_for_show\Assembly-Game\Release\AssemblyDone.lib" /MACHINE:X86 /SAFESEH:NO Release\resource.res
+         Release\frame_draw.obj
+         LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+         AssemblyDone.vcxproj -> C:\Project_for_show\Assembly-Game\Release\AssemblyDone.exe
+     1>Done Building Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" (Rebuild target(s)).
 
-Build FAILED.
+Build succeeded.
 
-Time Elapsed 00:00:19.28
+Time Elapsed 00:00:01.49
