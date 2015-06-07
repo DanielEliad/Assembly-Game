@@ -40,3 +40,7 @@
 #define IDB_25hp 140
 #define IDB_75hp 141
 #define IDB_150hp 142
+#define IDB_30d 143
+#define IDB_80d 144
+#define IDB_150d 145
+#define IDB_NextWave 146

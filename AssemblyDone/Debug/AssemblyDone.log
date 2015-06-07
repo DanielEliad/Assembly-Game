@@ -1,40 +1,11 @@
-﻿Build started 06/06/2015 23:48:14.
-     1>Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Rebuild target(s)).
-     1>_MASM:
-         Assembling frame_draw.asm...
-         cmd.exe /C "C:\Users\Daniel\AppData\Local\Temp\tmp9f4893a3ac9a46e0a715e8d0629ce415.cmd"
-         ml.exe /c /nologo /Zi /Fo"Debug\frame_draw.obj" /W3 /errorReport:prompt  /Taframe_draw.asm
-     1>frame_draw.asm(4700): warning A6001: no return from procedure
-     1>frame_draw.asm(746): warning A6004: procedure argument or local not referenced : paramter
-     1>frame_draw.asm(817): warning A6004: procedure argument or local not referenced : tempto
-     1>frame_draw.asm(817): warning A6004: procedure argument or local not referenced : tempfrom
-     1>frame_draw.asm(1180): warning A6004: procedure argument or local not referenced : hold
-     1>frame_draw.asm(1180): warning A6004: procedure argument or local not referenced : hold2
-     1>frame_draw.asm(1376): warning A6004: procedure argument or local not referenced : Highlighted
-     1>frame_draw.asm(2075): warning A6004: procedure argument or local not referenced : radix
-     1>frame_draw.asm(2467): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(2467): warning A6004: procedure argument or local not referenced : hdcMem1
-     1>frame_draw.asm(2467): warning A6004: procedure argument or local not referenced : hOld
-     1>frame_draw.asm(2554): warning A6004: procedure argument or local not referenced : hdcMem
-     1>frame_draw.asm(2716): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(2985): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(3109): warning A6004: procedure argument or local not referenced : brush
-     1>frame_draw.asm(3109): warning A6004: procedure argument or local not referenced : hWnd
-     1>frame_draw.asm(3109): warning A6004: procedure argument or local not referenced : testrc
-     1>frame_draw.asm(4660): warning A6004: procedure argument or local not referenced : brushcolouring2
-     1>frame_draw.asm(4660): warning A6004: procedure argument or local not referenced : hdcMem
-     1>frame_draw.asm(4660): warning A6004: procedure argument or local not referenced : hbmOld
-     1>frame_draw.asm(4660): warning A6004: procedure argument or local not referenced : bm
-     1>frame_draw.asm(4660): warning A6004: procedure argument or local not referenced : rectforpic
-     1>frame_draw.asm(4700): warning A6004: procedure argument or local not referenced : animcls
-       ResourceCompile:
-         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"Debug\resource.res" resource.rc 
-       Link:
+﻿Build started 07/06/2015 17:45:12.
+     1>Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" on node 2 (Build target(s)).
+     1>Link:
          F:\Visual Studio\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.lib" /MACHINE:X86 Debug\resource.res
          Debug\frame_draw.obj
          AssemblyDone.vcxproj -> C:\Project_for_show\Assembly-Game\Debug\AssemblyDone.exe
-     1>Done Building Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" (Rebuild target(s)).
+     1>Done Building Project "C:\Project_for_show\Assembly-Game\AssemblyDone\AssemblyDone.vcxproj" (Build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:26.86
+Time Elapsed 00:00:00.22

@@ -87,7 +87,7 @@ Coin_Height	equ	30
 Coin_Width	equ	30
 Health_Pack_Width	equ	50
 Health_Pack_Height	equ	65
-ChanceToDropHealthPack	equ	9
+ChanceToDropHealthPack	equ	15
 Space_Between_Player_Width	equ 64
 Space_Between_Player_Height	equ	52
 LengthofLeaf equ 12
@@ -154,6 +154,7 @@ buffer DWORD 20 dup(0)
 buffer2 DWORD 3 dup(0)
  VEL REAL4 10.0
  VELZ REAL4 4.0
+ BACKUPVELZ REAL4 4.0
  ADDINGZ REAL4 0.2
  threepointzero	REAL4	30.0
  WINPLACE WINDOWPLACEMENT       <>
@@ -186,7 +187,7 @@ buffer2 DWORD 3 dup(0)
  ;volumebite	DWORD 5fff5fffh
  Time_Between_Steps	DWORD	500;In Milliseconds
  Store	DWORD	0
- TimeTillRoundEnds	DWORD	10000;120000
+ TimeTillRoundEnds	DWORD	120000
  cost	HBITMAP	?
  costMasked	HBITMAP	?
  StoreBK	HBITMAP	?
@@ -196,7 +197,7 @@ buffer2 DWORD 3 dup(0)
  MyFont	HFONT	?
  scoreBuffer	BYTE	100 dup(0)
  timeBuffer BYTE	100	dup(0)
- doubledot BYTE	":"
+ doubledot BYTE	":",0
  realtimetillend	DWORD	10;120
  AnimClassName	BYTE	"ANIMATE_CLASS",0
  AnimWindowName	BYTE	"theAnimWinName",0
@@ -318,7 +319,7 @@ rotatePT POINT<WINDOW_WIDTH-250,WINDOW_HEIGHT-150>
 rotate_xForm XFORM<>
 Adding_Angle REAL4 0.05
 Current_Angle REAL4 ?
-DistanceMap dword (WINDOW_WIDTH*WINDOW_HEIGHT) dup(-1)
+DistanceMap dword (WINDOW_WIDTH*WINDOW_HEIGHT/80) dup(-1);/80 for now
 Volume HBITMAP ?
 VolumeMask HBITMAP ?
 VolumeBar HBITMAP ?
@@ -326,7 +327,7 @@ VolumeBarMask HBITMAP ?
 Circle HBITMAP ?
 CircleMask HBITMAP ?
 CircleX dword 50+100
-playbk db "play backgroundmusic.mp3",0
+playbk db "play backgroundmusic.mp3 repeat",0
 Paused HBITMAP ?
 Resume HBITMAP ?
 ResumeMask HBITMAP ?
@@ -344,7 +345,21 @@ h75hp HBITMAP ?
 h75hpMask HBITMAP ?
 h150hp HBITMAP ?
 h150hpMask HBITMAP ?
-
+MoneyBuffer BYTE 100 dup (0)
+h30d HBITMAP ?
+h30dMask HBITMAP ?
+h80d HBITMAP ?
+h80dMask HBITMAP ?
+h150d HBITMAP ?
+h150dMask HBITMAP ?
+deadzcount DWORD 0
+amountofzombiesneeded DWORD 15
+limit_for_spawning_time DWORD 300 ;in milliseconds
+limit_amount_of_zombies_to_spawn DWORD 1
+NextWave HBITMAP ?
+NextWaveMask HBITMAP ?
+TOP_VELZ REAL4 5.4
+MoneyToAdd DWORD 0
 .code
 
 Restart PROC,hWnd:HWND
@@ -386,7 +401,9 @@ add ebx,16
 loop loopingpacks
 
 mov Player.x,200
+mov Player.y,400
 mov Player_Life,500
+mov TimeTillRoundEnds,120000
 invoke SetTimer, hWnd, RoundEnded, TimeTillRoundEnds, NULL ;Set the time til the store
 mov eax,TimeTillRoundEnds
 mov ecx,1000
@@ -394,9 +411,86 @@ xor edx,edx
 idiv ecx
 mov realtimetillend,eax
 mov scoreNum,0
+mov Money,0
+movss xmm0,BACKUPVELZ
+movss VELZ,xmm0
+mov Time_Between_Steps,500
+mov limit_for_spawning_time,600
+mov amountofzombiesneeded,20
+mov limit_amount_of_zombies_to_spawn,1
+mov Zombie_Spawning_Time,1000
+mov Number_To_Spawn,1
+mov deadzcount,0
 ret
 Restart ENDP
 
+
+
+
+
+NextWaveP PROC,hWnd:HWND
+
+mov ebx,offset zombies
+mov ecx,50
+loopingzombies:
+mov dword ptr [ebx],-999
+add ebx,36
+loop loopingzombies
+
+mov ebx,offset bullets
+mov ecx,48
+loopingbullets:
+mov dword ptr [ebx],-999
+add ebx,40
+loop loopingbullets
+
+
+mov ebx,offset enemybullets
+mov ecx,48
+loopingbullets2:
+mov dword ptr [ebx],-999
+add ebx,40
+loop loopingbullets2
+
+mov ebx,offset coins
+mov ecx,50
+loopingcoins:
+mov dword ptr [ebx],-999
+add ebx,12
+loop loopingcoins
+
+mov ebx,offset Packs
+mov ecx,10
+loopingpacks:
+mov dword ptr [ebx],-999
+add ebx,16
+loop loopingpacks
+
+mov Player.x,200
+mov Player.y,400
+add TimeTillRoundEnds,30000
+invoke SetTimer, hWnd, RoundEnded, TimeTillRoundEnds, NULL ;Set the time til the store
+
+mov eax,TimeTillRoundEnds
+mov ecx,1000
+xor edx,edx
+idiv ecx
+mov realtimetillend,eax
+movss xmm0,BACKUPVELZ
+movss VELZ,xmm0
+mov Time_Between_Steps,500
+sub limit_for_spawning_time,75
+sub amountofzombiesneeded,2
+cmp amountofzombiesneeded,0
+jg noreset
+mov amountofzombiesneeded,1
+noreset:
+inc limit_amount_of_zombies_to_spawn
+mov Zombie_Spawning_Time,1000
+mov Number_To_Spawn,1
+mov deadzcount,0
+ret
+NextWaveP ENDP
 
 getValue PROC, x:DWORD, y:DWORD
 ;----------------------------------------------------------------------------
@@ -645,6 +739,10 @@ mark ENDP
 	je nosend_health_and_score
 
 	mov eax,scoreNum
+	mov [ebx],eax
+	add ebx,4
+
+	mov eax,MoneyToAdd
 	mov [ebx],eax
 	add ebx,4
 
@@ -1301,7 +1399,7 @@ inc FramesSinceLastClick
 cmp FramesSinceLastClick,6
 jl finish
 invoke GetAsyncKeyState,VK_ESCAPE
-
+shr eax,15
 cmp eax,0
 je finish
 mov STATUS,0
@@ -1386,7 +1484,7 @@ inc FramesSinceLastClick
 cmp FramesSinceLastClick,6
 jl finish
 invoke GetAsyncKeyState,VK_ESCAPE
-
+shr eax,15
 cmp eax,0
 je next
 mov FramesSinceLastClick,0
@@ -1691,7 +1789,6 @@ cmp FramesSinceLastClick,7
 jl finishbutton
 mov FramesSinceLastClick,0
 invoke GetAsyncKeyState,VK_ESCAPE
-
 cmp eax,0
 je dont_switch_to_start
 mov STATUS,0
@@ -2020,24 +2117,6 @@ finishbutton:
 ret
 StartScreen ENDP
 
-
-DrawStore	PROC,hdc:HDC
-;--------------------------------------------------------------------------------
-invoke DrawImage,hdc,StoreBK,0,0,0,0,960,720,WINDOW_WIDTH-15,WINDOW_HEIGHT-40
-mov eax,Highlight
-mov esi,WINDOW_WIDTH/3+20
-xor edx,edx
-imul esi
-add eax,50
-invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,eax,300,240,60,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
-
-invoke DrawImage_WithMask,hdc,h25hp,h25hpMask,50,300,565,116,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
-invoke DrawImage_WithMask,hdc,h75hp,h75hpMask,50+WINDOW_WIDTH/3+20,300,567,86,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
-invoke DrawImage_WithMask,hdc,h150hp,h150hpMask,50+WINDOW_WIDTH/3+20+WINDOW_WIDTH/3+20,300,655,86,0,0,WINDOW_WIDTH/3,WINDOW_HEIGHT/5
-;================================================================================
-ret
-DrawStore	ENDP
-
 itoa PROC,num:DWORD,stringP:DWORD,radix:DWORD
 ;--------------------------------------------------------------------------------
 local counting:DWORD
@@ -2074,6 +2153,172 @@ mov eax,counting
 ;================================================================================
 ret
 itoa	ENDP
+
+DrawStore	PROC,hdc:HDC,hWnd:HWND
+;--------------------------------------------------------------------------------
+local brush:HBRUSH
+
+invoke DrawImage,hdc,StoreBK,0,0,0,0,960,720,WINDOW_WIDTH-15,WINDOW_HEIGHT-40
+cmp Highlight,3
+je up_state
+mov eax,Highlight
+mov esi,WINDOW_WIDTH/6+180
+xor edx,edx
+imul esi
+add eax,50
+invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,eax,275,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+jmp not_up_state
+up_state:
+
+invoke DrawImage_WithMask,hdc,HighlightBIT,HighlightBITMasked,750,150,240,60,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+
+not_up_state:
+invoke DrawImage_WithMask,hdc,NextWave,NextWaveMask,750,150,831,143,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+
+invoke DrawImage_WithMask,hdc,h25hp,h25hpMask,50,460,268,116,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+invoke DrawImage_WithMask,hdc,h75hp,h75hpMask,50+WINDOW_WIDTH/6+180,460,267,84,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+invoke DrawImage_WithMask,hdc,h150hp,h150hpMask,50+WINDOW_WIDTH/6+180+WINDOW_WIDTH/6+180,460,314,86,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+
+invoke DrawImage_WithMask,hdc,h30d,h30dMask,50,275,744,325,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+invoke DrawImage_WithMask,hdc,h80d,h80dMask,50+WINDOW_WIDTH/6+180,275,785,321,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+invoke DrawImage_WithMask,hdc,h150d,h150dMask,50+WINDOW_WIDTH/6+180+WINDOW_WIDTH/6+180,275,796,265,0,0,WINDOW_WIDTH/6,WINDOW_HEIGHT/6
+
+invoke itoa,Money,offset MoneyBuffer,10
+push eax
+
+invoke SelectObject,hdc,MyFont
+invoke SetBkMode,hdc,TRANSPARENT
+invoke SetTextColor,hdc,000045f7h
+pop eax
+invoke TextOut,hdc,275,140,offset MoneyBuffer,eax
+
+inc FramesSinceLastClick
+cmp FramesSinceLastClick,5
+jl finish
+
+invoke GetAsyncKeyState,VK_RETURN
+cmp eax,0
+je next
+
+mov FramesSinceLastClick,0
+
+cmp Highlight,0
+jne not25
+cmp Money,30
+jl finish
+cmp Player_Life,500
+jge finish
+sub Money,30
+add Player_Life,25
+jmp finish
+not25:
+
+cmp Highlight,1
+jne not75
+cmp Money,80
+jl finish
+cmp Player_Life,500
+jge finish
+sub Money,80
+add Player_Life,75
+jmp finish
+not75:
+
+cmp Highlight,2
+jne not150
+cmp Money,150
+jl finish
+cmp Player_Life,500
+jge finish
+sub Money,150
+add Player_Life,150
+jmp finish
+not150:
+
+cmp Highlight,3
+jne not_next_wave
+invoke NextWaveP,hWnd
+mov STATUS,1
+jmp finish
+not_next_wave:
+
+next:
+invoke GetAsyncKeyState,VK_RIGHT
+cmp eax,0
+je next2
+
+mov FramesSinceLastClick,0
+
+inc Highlight
+cmp Highlight,2
+jng nevermind
+mov Highlight,0
+nevermind:
+
+
+next2:
+invoke GetAsyncKeyState,VK_LEFT
+cmp eax,0
+je next3
+
+mov FramesSinceLastClick,0
+
+dec Highlight
+cmp Highlight,0
+jnl nevermind2
+mov Highlight,2
+nevermind2:
+
+next3:
+invoke GetAsyncKeyState,VK_UP
+cmp eax,0
+je next4
+mov FramesSinceLastClick,0
+mov Highlight,3
+jmp finish
+next4:
+invoke GetAsyncKeyState,VK_DOWN
+cmp eax,0
+je finish
+mov FramesSinceLastClick,0
+mov Highlight,0
+finish:
+cmp Player_Life,500
+jng noreset
+mov Player_Life,500
+noreset:
+
+invoke GetStockObject,DC_BRUSH
+mov brush,eax
+invoke SelectObject,hdc,brush
+invoke SetDCBrushColor, hdc,00000000FF00h
+mov brush,eax
+mov eax,Player_Life
+mov ecx,5
+xor edx,edx
+idiv ecx
+push eax
+invoke BUILDRECT,275,205,50,eax,hdc,brush
+pop eax
+mov ebx,100
+sub ebx,eax
+add eax,275
+push ebx
+push eax
+invoke SelectObject,hdc,brush
+invoke SetDCBrushColor,hdc,0000000000ffh
+mov brush,eax
+pop eax
+pop ebx
+invoke BUILDRECT,eax,205,50,ebx,hdc,brush
+
+
+
+;================================================================================
+ret
+DrawStore	ENDP
+
+
 
 DrawScore	PROC,hdc:HDC
 ;--------------------------------------------------------------------------------
@@ -2161,7 +2406,7 @@ endingsearching:
 ret
 Check_If_Bullet_Hit_And_Destroy_Zombie ENDP
  
- Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin PROC,x:DWORD,y:DWORD
+ Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin PROC,x:DWORD,y:DWORD,lp_money:DWORD
  ;--------------------------------------------------------------------------------
  local PlayerRect:RECT
  local CoinRect:RECT
@@ -2196,7 +2441,8 @@ cmp eax,0
 je DeadCoin
 popa
 mov dword ptr [ebx],-999
-inc Money
+mov edi,lp_money
+inc dword ptr [edi]
 add scoreNum,20
 pusha
 DeadCoin:
@@ -2554,60 +2800,6 @@ jnz loopingdrawingpacks
 ret
 Draw_Packs	ENDP
 
-AdvanceZombie_and_CheckIfDead	PROC,hWnd:HWND
-;--------------------------------------------------------------------------------
-mov ebx,offset zombies
-mov ecx,50
-
-loopingzomb:
-pusha;-----------------------------------------------
-mov eax,dword ptr [ebx]
-cmp eax,-999
-je next
-mov eax,dword ptr [ebx+16];hit count
-cmp eax,2
-jge deadz
-movss xmm0, dword ptr [ebx]
-movss xmm1, dword ptr [ebx+4]
-addss xmm0,dword ptr [ebx+12]
-movss dword ptr [ebx],xmm0
-addss xmm1, dword ptr [ebx+8]
-movss dword ptr [ebx+4],xmm1
-jmp next
-deadz:
-;add scoreNum,50
-sub Time_Between_Steps,50
-pusha;--------------------------------
-cvtss2si eax,dword ptr [ebx]
-mov ZombieX,eax
-cvtss2si edx,dword ptr [ebx+4]
-mov ZombieY,edx
-invoke Maybe_Drop_Pack,ZombieX,ZombieY
-invoke DropCoin,ZombieX,ZombieY
-
-popa;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-mov dword ptr [ebx],-999
-cmp Zombie_Spawning_Time,500
-jle next
-mov eax,Zombie_Spawning_Time
-sub eax,60
-mov Zombie_Spawning_Time,eax
-;inc Number_To_Spawn
-invoke SetTimer, hWnd, ZombieTime, Zombie_Spawning_Time , NULL ;Set the zombie time
-movss xmm0,ADDINGZ
-movss xmm1,VELZ
-addss xmm1,xmm0
-movss VELZ,xmm1
-
-next:
-popa;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-add ebx,36
-dec ecx
-jnz loopingzomb;loop loopingzomb
-;================================================================================
-ret
-AdvanceZombie_and_CheckIfDead ENDP
-
 BITMAP_ID_TO_HBITMAP	PROC,id:DWORD
 
 cmp id,113
@@ -2686,7 +2878,7 @@ mov dword ptr [ebx+32],eax
 jmp next
 deadz:
 ;add scoreNum,50
-sub Time_Between_Steps,50
+inc deadzcount
 pusha
 cvtss2si eax,dword ptr [ebx]
 mov ZombieX,eax
@@ -2696,13 +2888,29 @@ invoke Maybe_Drop_Pack,ZombieX,ZombieY
 invoke DropCoin,ZombieX,ZombieY
 popa
 mov dword ptr [ebx],-999
-cmp Zombie_Spawning_Time,500
-jle next
+mov eax,limit_for_spawning_time
+cmp Zombie_Spawning_Time,eax
+jle maybe_inc
 mov eax,Zombie_Spawning_Time
 sub eax,60
 mov Zombie_Spawning_Time,eax
-;inc Number_To_Spawn
 invoke SetTimer, hWnd, ZombieTime, Zombie_Spawning_Time , NULL ;Set the zombie time
+maybe_inc:
+mov eax,limit_amount_of_zombies_to_spawn
+cmp Number_To_Spawn,eax
+jge noinc
+mov eax,amountofzombiesneeded
+cmp deadzcount,eax
+jl noinc
+mov deadzcount,0
+inc Number_To_Spawn
+noinc:
+movss xmm0,VELZ
+cvtss2si eax,xmm0
+movss xmm0,TOP_VELZ
+cvtss2si ecx,xmm0
+cmp eax,ecx
+jge next
 movss xmm0,ADDINGZ
 movss xmm1,VELZ
 addss xmm1,xmm0
@@ -3440,7 +3648,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 					.if connected_to_friend == TRUE
 					invoke crt_strcmp,offset buffer_for_sock,offset you_are_host
 					cmp eax,0
-					je you_are_the_host
+					je you_are_the_host2
 
 					invoke crt_strcmp,offset buffer_for_sock,offset not_two_players
 					cmp eax,0
@@ -3490,6 +3698,10 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 						mov scoreNum,eax
 						add ebx,4
 						
+						mov eax,[ebx]
+						mov Money,eax
+						add ebx,4
+
 						mov eax,dword ptr [ebx]
 						add Player_Life,eax
 						add ebx,4
@@ -3590,6 +3802,7 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 					 invoke CreateThread, NULL, NULL, offset sendlocation,offset clientsin, NULL, NULL
 					 mov connected_to_friend, TRUE
 					 mov two_Players,TRUE
+					 invoke Restart,hWnd
 					 mov STATUS,1
 					 ;invoke MessageBox, hWnd,offset connectedtopeer,offset connectedtopeer,MB_OK
 					.endif
@@ -3669,7 +3882,10 @@ ProjectWndProc  PROC,   hWnd:HWND, message:UINT, wParam:WPARAM, lParam:LPARAM
 		invoke MessageBox, 0,offset iamhost,offset iamhost,MB_OK
 		ret
 
-
+		you_are_the_host2:
+		mov host,TRUE
+		mov two_Players,FALSE
+		ret
 		you_are_not_the_host:
 		mov host,FALSE
 		;invoke MessageBox, hWnd,offset iamnothost,offset iamnothost,MB_OK
@@ -3985,19 +4201,60 @@ movss xmm0,OnePointZero
 		mov h150hpMask,eax
 		
 						
+        invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,143
+		mov h30d,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	h30d,	00ffffffh
+		mov h30dMask,eax
+
+		
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,144
+		mov h80d,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	h80d,	00ffffffh
+		mov h80dMask,eax
+		
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,145
+		mov h150d,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	h150d,	00ffffffh
+		mov h150dMask,eax
+
+
+		invoke GetModuleHandle,NULL
+		invoke LoadBitmap,eax,146
+		mov NextWave,eax
+
+		invoke Get_Handle_To_Mask_Bitmap,	NextWave,	00ffffffh
+		mov NextWaveMask,eax
+
+
         invoke LoadCursor,NULL,IDC_CROSS
         mov icursor,eax
 		
+		xor eax,eax
+		mov ax,0ffffh
+		xor ebx,ebx
+		mov bx,((WINDOW_WIDTH*4)/5)-50+50
+		xor edx,edx
+		idiv bx
+		mov ebx,CircleX
+		sub ebx,50
+		xor edx,edx
+		imul bx
+		mov edi,offset volume
+		mov word ptr [edi],ax
+		mov word ptr [edi+2],ax
+		invoke waveOutSetVolume,NULL,volume
+
+
 	   ret
        
         closing:
-		cmp two_Players,FALSE
-	je nosend_host_close
-	cmp host,FALSE
-	je nosend_host
-	invoke sendto,sock, offset you_are_host, 1024, 0, offset clientsin, sizeof clientsin
-	mov connected_to_friend,FALSE
-	nosend_host_close:
+	
 		invoke CloseProcess	
  
  
@@ -4023,7 +4280,7 @@ movss xmm0,OnePointZero
 
 				cmp STATUS,2
 				jne noStore
-				invoke DrawStore,hdcBuffer
+				invoke DrawStore,hdcBuffer,hWnd
 				jmp endingofpainting
 				ret
 				noStore:
@@ -4167,10 +4424,10 @@ movss xmm0,OnePointZero
 		je noneedtocheck
 		
 		
-		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player2.x,Player2.y
+		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player2.x,Player2.y,offset MoneyToAdd
 		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player2.x,Player2.y,offset player2_health_to_add
 		needtocheck:
-		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player.x,Player.y
+		invoke Check_If_Player_Hit_Coin_Add_Money_And_Remove_Coin,Player.x,Player.y,offset Money
 		invoke Check_If_Player_Hit_Pack_And_Remove_Pack,Player.x,Player.y,offset Player_Life
 		noneedtocheck:
 
@@ -4194,7 +4451,7 @@ movss xmm0,OnePointZero
         cmp jmpingDown, 1
         je jmpDown
         invoke GetAsyncKeyState, VK_SPACE
-		
+		shr eax,15
         cmp eax, 0
         jne startjmp
         checkupdown:
@@ -4651,11 +4908,10 @@ OtherInstances:
 	endgame:
 	cmp two_Players,FALSE
 	je nosend_host
-	cmp host,FALSE
-	je nosend_host
 	invoke sendto,sock, offset you_are_host, 1024, 0, offset clientsin, sizeof clientsin
 	mov connected_to_friend,FALSE
 	nosend_host:
+	invoke KillTimer,hWnd,RoundEnded
 	mov STATUS,7
 	ret
 ProjectWndProc  ENDP
