@@ -696,6 +696,8 @@ mark ENDP
 	local send_what:BYTE
 	mov send_what,0
 	again:
+	cmp two_Players,FALSE
+	je notagain
 	mov ebx, offset infobuffer
 	cmp send_what,0
 	jne nosendplayer
@@ -840,7 +842,7 @@ mark ENDP
 	real_endofsendlocation:
 	invoke Sleep,3
 	jmp again
-
+	notagain:
 	ret
 sendlocation ENDP
 
@@ -4910,9 +4912,11 @@ OtherInstances:
 	je nosend_host
 	invoke sendto,sock, offset you_are_host, 1024, 0, offset clientsin, sizeof clientsin
 	mov connected_to_friend,FALSE
+	mov two_Players,FALSE
 	nosend_host:
 	invoke KillTimer,hWnd,RoundEnded
 	mov STATUS,7
+
 	ret
 ProjectWndProc  ENDP
  
