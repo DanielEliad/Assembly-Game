@@ -27,7 +27,7 @@ while True:
             pass
         s.settimeout(None)
         if data2=='yes i am sure':
-            s.sendto('You are the host!!!'+'\0',addres_client)
+            s.sendto('You are the host!!!'+'\0',addr)
             #s.sendto('You are not the host!!!'+'\0',addr)
             print 'sending ip and port to one another'
             s.sendto('Get ready for IP.'+'\0',addr)
